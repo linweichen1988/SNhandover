@@ -145,7 +145,8 @@ select:focus { outline: none; border-color: var(--accent); }
 .btn-sm { padding: 3px 9px; font-size: 11px; }
 .btn-ghost { border-color: transparent; background: transparent; }
 .btn-ghost:hover { background: var(--surface2); border-color: var(--border); }
-.viewer-back { color: var(--accent) !important; border-color: var(--accent) !important; font-weight: 500; }
+.viewer-back { color: var(--accent) !important; border-color: var(--accent) !important; background: var(--accent-light) !important; font-weight: 500; }
+.viewer-back:hover { background: #d0e8f5 !important; }
 
 /* ── TABLE ── */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
@@ -1092,19 +1093,30 @@ function loadFromSheets(){
 }
 
 function renderUsers(){
-  const tbody=document.getElementById('user-tbody');if(!tbody)return;
-  const all=[SUPER_USER,...getUsers()];
-  const isS=currentUser&&currentUser.level==='S';
-  tbody.innerHTML=all.map(u=>`<tr>
+  const tbody=document.getElementById('user-tbody');
+  if(!tbody) return;
+  const isS = currentUser && currentUser.level === 'S';
+  const aUsers = getUsers();
+  const all = [SUPER_USER, ...aUsers];
+  tbody.innerHTML = all.map(u => `<tr>
     <td style="font-family:var(--mono);font-size:12px">${u.id}</td>
     <td>${u.name}</td>
     <td><span class="badge ${u.level==='S'?'badge-s':'badge-blue'}">${u.level}</span></td>
     <td style="font-size:12px;color:var(--text3)">${u.created||'系統預設'}</td>
-    <td style="white-space:nowrap">${u.level!=='S'&&isS?`
-      <button class="btn btn-sm" onclick="openEditUser('${u.id}')" style="color:var(--accent);border-color:#c5daea;margin-right:4px">編輯</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`:'—'}
+    <td style="white-space:nowrap">${u.level!=='S' && isS
+      ? `<button class="btn btn-sm" onclick="openEditUser('${u.id}')" style="color:var(--accent);border-color:#c5daea;margin-right:4px">編輯</button>
+         <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`
+      : '—'}
     </td>
   </tr>`).join('');
+  const addBtn = document.getElementById('btn-add-user');
+  if(addBtn) addBtn.style.display = isS ? '' : 'none';
+  const cpwSec = document.getElementById('changepw-section');
+  if(cpwSec) cpwSec.style.display = isS ? '' : 'none';
+  const p5sub = document.getElementById('p5-sub');
+  if(p5sub) p5sub.textContent = isS
+    ? '層級 S 專屬：新增、編輯或刪除層級 A 帳號'
+    : '帳號列表（僅供檢視）';
 }
 function showAddUserForm(){if(!currentUser||currentUser.level!=='S'){toast('權限不足');return}const f=document.getElementById('add-user-form');f.style.display=f.style.display==='none'?'block':'none'}
 function addUser(){
@@ -1126,12 +1138,13 @@ function deleteUser(id){
   saveUsers(getUsers().filter(u=>u.id!==id));renderUsers();toast('帳號已刪除');
 }
 function openEditUser(id){
-  const u=getUsers().find(x=>x.id===id);
-  if(!u)return;
-  document.getElementById('eu-id').value=id;
-  document.getElementById('eu-id-display').value=id;
-  document.getElementById('eu-name').value=u.name;
-  document.getElementById('eu-pw').value='';
+  if(!currentUser || currentUser.level !== 'S') { toast('權限不足'); return; }
+  const u = getUsers().find(x => x.id === id);
+  if(!u){ toast('找不到此帳號'); return; }
+  document.getElementById('eu-id').value = id;
+  document.getElementById('eu-id-display').value = id;
+  document.getElementById('eu-name').value = u.name;
+  document.getElementById('eu-pw').value = '';
   document.getElementById('edit-user-modal').classList.add('open');
 }
 function closeEditUserModal(e){
@@ -1372,11 +1385,25 @@ function showPage(pid, target) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(pid).classList.add('active');
-  document.getElementById('nav-' + pid).classList.add('active');
+  const navEl = document.getElementById('nav-' + pid);
+  if (navEl) navEl.classList.add('active');
   if (pid === 'p2') { jumpTarget = target || null; renderDetail(); }
   if (pid === 'p3') renderProjects();
   if (pid === 'p4') renderShuWu();
   if (pid === 'p1') renderMain();
+  if (pid === 'p5') {
+    const isSuper = currentUser && currentUser.level === 'S';
+    // 每次進入 p5 都重新設定顯示狀態
+    const addBtn = document.getElementById('btn-add-user');
+    if (addBtn) addBtn.style.display = isSuper ? '' : 'none';
+    const cpwSec = document.getElementById('changepw-section');
+    if (cpwSec) cpwSec.style.display = isSuper ? '' : 'none';
+    const p5sub = document.getElementById('p5-sub');
+    if (p5sub) p5sub.textContent = isSuper
+      ? '層級 S 專屬：新增、編輯或刪除層級 A 帳號'
+      : '帳號列表（僅供檢視）';
+    renderUsers();
+  }
   window.scrollTo(0, 0);
 }
 
