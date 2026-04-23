@@ -355,7 +355,13 @@ tbody tr:hover td { background: #fafaf8; }
 .user-table td{padding:10px 14px;border-bottom:.5px solid var(--border);vertical-align:middle}
 .user-table tr:last-child td{border-bottom:none}
 .user-table tr:hover td{background:var(--surface2)}
-.viewer-mode .edit-only{display:none!important}
+
+/* 觀看版：隱藏所有編輯功能 */
+.viewer-mode .page-header .btn-primary,
+.viewer-mode .page-header .btn-ghost,
+.viewer-mode .add-form,
+.viewer-mode .modal-overlay { display: none !important; }
+
 
 </style>
 </head>
@@ -878,8 +884,23 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAOpTEyQWjPIt3
 const SUPER_USER = {id:'110219',pw:'110219',name:'林\u7dad\u8fb0',level:'S'};
 let currentUser=null, appMode=null;
 
-function getUsers(){try{return JSON.parse(localStorage.getItem('handover_users')||'[]')}catch(e){return[]}}
-function saveUsers(a){localStorage.setItem('handover_users',JSON.stringify(a))}
+// 層級 A 帳號從 Sheets 載入，存於此變數
+let sheetsUsers = [];
+
+function getUsers(){ return sheetsUsers; }
+
+function saveUsers(arr){
+  sheetsUsers = arr;
+  // 同步寫回 Sheets
+  if(!APPS_SCRIPT_URL) return;
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({action:'saveUsers', users: arr})
+  }).then(r=>r.json()).then(d=>{
+    if(d.ok) toast('帳號已更新至 Sheets ✓');
+    else toast('帳號寫入失敗：' + (d.error||''));
+  }).catch(()=>toast('帳號寫入網路錯誤'));
+}
 
 function toHalf(str) {
   // 全形英數 → 半形
@@ -922,13 +943,22 @@ function startApp(){
   document.body.classList.toggle('viewer-mode',isViewer);
   if(isViewer){
     applyViewerRestrictions();
+    // 鎖死所有編輯 modal 開啟函式，訪客無法觸發
+    window.openEditModal   = () => {};
+    window.openProjModal   = () => {};
+    window.openShuwuModal  = () => {};
+    window.toggleForm      = () => {};
+    window.addItem         = () => {};
+    window.addProject      = () => {};
+    window.deleteProject   = () => {};
+    window.updatePct       = () => {};
     document.getElementById('sync-status').textContent='\u8f09\u5165\u4e2d...';
     loadFromSheetsJsonp();
   } else {
     const restored=restoreData();
     renderMain();renderDetail();renderProjects();renderShuWu();updateTimestamp();
     if(restored)toast('\u5df2\u81ea\u52d5\u9084\u539f\u4e0a\u6b21\u8cc7\u6599 \u2713');
-    renderUsers();
+    if(APPS_SCRIPT_URL){fetch(APPS_SCRIPT_URL+'?action=load').then(r=>r.json()).then(d=>{if(Array.isArray(d.users))sheetsUsers=d.users;renderUsers();}).catch(()=>renderUsers());}else{renderUsers();}
     // Show add button and subtitle based on level
     const addBtn = document.getElementById('btn-add-user');
     if(addBtn) addBtn.style.display = isSuper ? '' : 'none';
@@ -971,7 +1001,7 @@ function clearDirty() {
 window.addEventListener('beforeunload', e => {
   if (isDirty && appMode === 'admin') {
     e.preventDefault();
-    e.returnValue = '您有尚未同步至 Sheets 的修改，確定要離開嗎？';
+    e.returnValue = '您有尚未成功同步至 Sheets，確定要離開嗎？';
     return e.returnValue;
   }
 });
@@ -981,7 +1011,7 @@ function syncToSheets(){
   const nav=document.getElementById('nav-sync');
   nav.style.opacity='0.5';nav.style.pointerEvents='none';
   document.getElementById('sync-status').textContent='同步中...';
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'save',data:{items,projects,shuWu,nextId,nextPid}})})
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'save',data:{items,projects,shuWu,users:sheetsUsers,nextId,nextPid}})})
   .then(r=>r.json()).then(d=>{
     nav.style.opacity='';nav.style.pointerEvents='';
     if(d.ok){const ts=new Date().toLocaleString('zh-TW',{hour:'2-digit',minute:'2-digit'});document.getElementById('sync-status').textContent='☁ 已同步 '+ts;document.getElementById('sync-status').style.color='#7ab8d6';clearDirty();toast('已同步至 Google Sheets ✓')}
@@ -997,6 +1027,7 @@ function loadFromSheets(){
     if(Array.isArray(d.items)&&d.items.length>0)items=d.items;
     if(Array.isArray(d.projects))projects=d.projects;
     if(Array.isArray(d.shuWu)&&d.shuWu.length>0)shuWu=d.shuWu;
+    if(Array.isArray(d.users))sheetsUsers=d.users;
     if(d.nextId)nextId=d.nextId;if(d.nextPid)nextPid=d.nextPid;
     persistData();renderMain();renderDetail();renderProjects();renderShuWu();updateTimestamp();
     const ts=new Date().toLocaleString('zh-TW',{hour:'2-digit',minute:'2-digit'});
@@ -1430,7 +1461,7 @@ function renderMain() {
         <td style="max-width:120px">${formShort ? `<span class="nas-link" title="${i.formUrl}">${formShort}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
         <td style="font-size:12px;color:var(--text2)">${i.mail || '<span style="color:var(--text3)">—</span>'}</td>
         <td><button class="jump-btn" onclick="showPage('p2',${i.id})">說明 →</button></td>
-        <td><button class="btn btn-sm" onclick="openEditModal(${i.id})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>
+        ${appMode==='admin' ? `<td><button class="btn btn-sm" onclick="openEditModal(${i.id})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>` : '<td></td>'}
       </tr>
     `}).join('');
   }
@@ -1600,7 +1631,7 @@ function renderProjects() {
       <td style="font-size:12px;max-width:200px;line-height:1.5;color:var(--text2)">${p.note}</td>
       <td style="font-size:12px">${p.owner}</td>
       <td style="font-size:12px;font-family:var(--mono);white-space:nowrap">${p.due || '—'}</td>
-      <td><button class="btn btn-sm" onclick="openProjModal(${p.id})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>
+      ${appMode==='admin' ? `<td><button class="btn btn-sm" onclick="openProjModal(${p.id})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>` : '<td></td>'}
     </tr>
   `}).join('');
   updateBadges();
@@ -1630,6 +1661,8 @@ function addItem() {
   toggleForm('form1');
   renderMain();
   updateTimestamp();
+  persistData();
+  markDirty();
   toast('業務已新增 ✓');
 }
 
@@ -1681,6 +1714,8 @@ function saveItem() {
   document.getElementById('edit-modal').classList.remove('open');
   renderMain();
   updateTimestamp();
+  persistData();
+  markDirty();
   toast('已儲存 ✓');
 }
 
@@ -1691,6 +1726,8 @@ function deleteItemFromModal() {
   document.getElementById('edit-modal').classList.remove('open');
   renderMain();
   updateTimestamp();
+  persistData();
+  markDirty();
   toast('已刪除');
 }
 
@@ -1713,6 +1750,8 @@ function addProject() {
   toggleForm('form2');
   renderProjects();
   updateTimestamp();
+  persistData();
+  markDirty();
   toast('專案已新增 ✓');
 }
 
@@ -1721,6 +1760,8 @@ function deleteProject(id) {
   projects = projects.filter(p => p.id !== id);
   renderProjects();
   updateTimestamp();
+  persistData();
+  markDirty();
   toast('已刪除');
 }
 
@@ -1730,6 +1771,8 @@ function updatePct(id, val) {
     p.pct = Math.min(100, Math.max(0, parseInt(val) || 0));
     renderProjects();
     updateTimestamp();
+    persistData();
+    markDirty();
   }
 }
 
@@ -1885,20 +1928,6 @@ function restoreData() {
   } catch(e) { return false; }
 }
 
-// Wrap all data-mutating actions to auto-persist
-const _addItem = addItem;
-function addItem() { _addItem(); persistData(); markDirty(); }
-const _saveItem = saveItem;
-function saveItem() { _saveItem(); persistData(); markDirty(); }
-const _deleteItemFromModal = deleteItemFromModal;
-function deleteItemFromModal() { _deleteItemFromModal(); persistData(); markDirty(); }
-const _addProject = addProject;
-function addProject() { _addProject(); persistData(); markDirty(); }
-const _deleteProject = deleteProject;
-function deleteProject(id) { _deleteProject(id); persistData(); markDirty(); }
-const _updatePct = updatePct;
-function updatePct(id, val) { _updatePct(id, val); persistData(); markDirty(); }
-
 // ── 庶務申請資料 ──────────────────────────────────────────────
 let shuWu = [
   {no:1,  cat:'行政處', obj:'制服',       state:'到職、調職、復職', unit:'行政處', formNo:'TMRT-ADD-GEN-0-4093 工作（制）服領用申請表', reg:'TMRT-ADD-GEN-0-3008 工作（制）服申領及管理工作說明書', note:'電子檔登打完成後，傳送段辦幕僚審核並接續辦理', remark:'附件：復職申請書'},
@@ -1962,7 +1991,7 @@ function renderShuWu() {
       <td style="font-size:11px;color:var(--text2);max-width:180px;line-height:1.5">${r.reg || '<span style="color:var(--text3)">無</span>'}</td>
       <td style="font-size:12px;color:var(--text2);max-width:200px;line-height:1.6">${r.note}</td>
       <td style="font-size:11px;color:var(--text3);max-width:150px;line-height:1.5">${r.remark || '—'}</td>
-      <td><button class="btn btn-sm" onclick="openShuwuModal(${r.no})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>
+      ${appMode==='admin' ? `<td><button class="btn btn-sm" onclick="openShuwuModal(${r.no})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>` : '<td></td>'}
     </tr>
   `).join('');
 }
