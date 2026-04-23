@@ -925,6 +925,7 @@ function doChangePw() {
 
   SUPER_USER = { ...SUPER_USER, pw: newPw };
   if (currentUser && currentUser.level === 'S') currentUser = { ...currentUser, pw: newPw };
+  saveSession(); // 更新 session 中的密碼
 
   // 同步寫回 Sheets
   const allUsers = [SUPER_USER, ...getUsers()];
@@ -970,12 +971,12 @@ function doLogin(){
   const pw = toHalf(document.getElementById('login-pass').value);
   const err=document.getElementById('login-error');
   err.textContent='';
-  if(id===SUPER_USER.id&&pw===SUPER_USER.pw){currentUser=SUPER_USER;appMode='admin';startApp();return}
+  if(id===SUPER_USER.id&&pw===SUPER_USER.pw){currentUser=SUPER_USER;appMode='admin';startApp();saveSession();return}
   const found=getUsers().find(u=>u.id===id&&u.pw===pw);
-  if(found){currentUser=found;appMode='admin';startApp();return}
+  if(found){currentUser=found;appMode='admin';startApp();saveSession();return}
   err.textContent='\u5e33\u865f\u6216\u5bc6\u78bc\u932f\u8aa4\uff0c\u8acb\u91cd\u65b0\u8f38\u5165';
 }
-function enterViewer(){currentUser={id:'guest',name:'\u8a2a\u5ba2',level:'V'};appMode='viewer';startApp()}
+function enterViewer(){currentUser={id:'guest',name:'\u8a2a\u5ba2',level:'V'};appMode='viewer';startApp();saveSession();}
 function doLogout(){
   currentUser=null;appMode=null;
   document.getElementById('app-screen').style.display='none';
@@ -983,6 +984,7 @@ function doLogout(){
   document.getElementById('login-user').value='';
   document.getElementById('login-pass').value='';
   document.getElementById('login-error').textContent='';
+  try{sessionStorage.removeItem(SESSION_KEY);}catch(e){}
 }
 
 function startApp(){
@@ -1020,7 +1022,14 @@ function startApp(){
       if(Array.isArray(d.users)){
         sheetsUsers=d.users.filter(u=>u.level!=='S');
         const savedS=d.users.find(u=>u.level==='S'&&u.id===SUPER_USER.id);
-        if(savedS) SUPER_USER={...SUPER_USER, pw:savedS.pw};
+        if(savedS){ SUPER_USER={...SUPER_USER, pw:savedS.pw}; if(currentUser&&currentUser.level==='S') currentUser={...currentUser,pw:savedS.pw}; }
+        // Level A: 還原 session 後用 Sheets 確認帳號有效
+        if(appMode==='admin'&&currentUser&&currentUser.level==='A'){
+          const validA=sheetsUsers.find(u=>u.id===currentUser.id);
+          if(!validA){ doLogout(); toast('帳號已失效，請重新登入'); return; }
+          currentUser={...validA};
+        }
+        saveSession();
       }
       renderUsers();
     }).catch(()=>renderUsers());}else{renderUsers();}
@@ -2170,6 +2179,52 @@ function deleteShuwuFromModal() {
   markDirty();
   toast('已刪除');
 }
+
+// ── SESSION 保存 ────────────────────────────────────────────────
+const SESSION_KEY = 'handover_session_v1';
+
+function saveSession() {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      userId: currentUser ? currentUser.id : null,
+      userLevel: currentUser ? currentUser.level : null,
+      userName: currentUser ? currentUser.name : null,
+      appMode: appMode,
+      superPw: SUPER_USER.pw  // 保存最新密碼
+    }));
+  } catch(e) {}
+}
+
+function restoreSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!s.userId || !s.appMode) return false;
+
+    appMode = s.appMode;
+
+    // 還原 SUPER_USER 密碼
+    if (s.superPw) SUPER_USER = { ...SUPER_USER, pw: s.superPw };
+
+    if (s.userLevel === 'S') {
+      currentUser = { ...SUPER_USER };
+    } else if (s.userLevel === 'V') {
+      currentUser = { id: 'guest', name: '訪客', level: 'V' };
+    } else {
+      // Level A: 先用 session 資料暫代，Sheets 載入後再確認
+      currentUser = { id: s.userId, name: s.userName, level: 'A' };
+    }
+    return true;
+  } catch(e) { return false; }
+}
+
+// ── INIT: 頁面載入時嘗試還原 session ──────────────────────────
+(function() {
+  if (restoreSession()) {
+    startApp();
+  }
+})();
 
 // INIT: triggered by startApp() on login
 </script>
