@@ -411,6 +411,7 @@ tbody tr:hover td { background: #fafaf8; }
     <div id="nav-s-section" style="display:none">
       <div class="nav-section" style="margin-top:8px">管理</div>
       <div class="nav-item" onclick="showPage('p5')" id="nav-p5"><span class="nav-icon">◈</span> 權限管理</div>
+      <div class="nav-item" onclick="openChangePwModal()"><span class="nav-icon">🔑</span> 修改密碼</div>
     </div>
     <div class="nav-section" style="margin-top:8px">帳號</div>
     <div class="nav-item" onclick="doLogout()"><span class="nav-icon">→</span> 登出</div>
@@ -876,12 +877,80 @@ tbody tr:hover td { background: #fafaf8; }
   </div>
 </div>
 
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="changepw-modal" onclick="closeChangePwModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-title">修改層級 S 密碼</div>
+    <div class="field" style="margin-bottom:12px">
+      <label>目前密碼</label>
+      <input id="cpw-old" type="password" placeholder="請輸入目前密碼">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>新密碼</label>
+      <input id="cpw-new" type="password" placeholder="請輸入新密碼（至少4碼）">
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label>確認新密碼</label>
+      <input id="cpw-confirm" type="password" placeholder="再輸入一次新密碼">
+    </div>
+    <div class="login-error" id="cpw-error"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeChangePwModal()">取消</button>
+      <button class="btn btn-primary" onclick="doChangePw()">確認修改</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAOpTEyQWjPIt3k5TEtXuDTlonvu9eTE8mWXPcV9S-3my7yZRXMYX1DBcHbiUk2K9VEg/exec';
-const SUPER_USER = {id:'110219',pw:'110219',name:'林\u7dad\u8fb0',level:'S'};
+// 層級 S 帳號（可透過修改密碼功能更新，存於 Sheets users 分頁）
+let SUPER_USER = {id:'110219', pw:'110219', name:'\u6797\u7dad\u8fb0', level:'S'};
+
+function openChangePwModal() {
+  document.getElementById('cpw-old').value = '';
+  document.getElementById('cpw-new').value = '';
+  document.getElementById('cpw-confirm').value = '';
+  document.getElementById('cpw-error').textContent = '';
+  document.getElementById('changepw-modal').classList.add('open');
+}
+function closeChangePwModal(e) {
+  if (e && e.target !== document.getElementById('changepw-modal')) return;
+  document.getElementById('changepw-modal').classList.remove('open');
+}
+function doChangePw() {
+  const oldPw  = toHalf(document.getElementById('cpw-old').value);
+  const newPw  = toHalf(document.getElementById('cpw-new').value);
+  const confirm2 = toHalf(document.getElementById('cpw-confirm').value);
+  const errEl  = document.getElementById('cpw-error');
+  errEl.textContent = '';
+
+  if (oldPw !== SUPER_USER.pw) { errEl.textContent = '目前密碼錯誤'; return; }
+  if (newPw.length < 4)        { errEl.textContent = '新密碼至少需要 4 個字元'; return; }
+  if (newPw !== confirm2)      { errEl.textContent = '兩次輸入的新密碼不一致'; return; }
+
+  // 更新記憶體中的 SUPER_USER
+  SUPER_USER = { ...SUPER_USER, pw: newPw };
+  // 同步更新 currentUser
+  if (currentUser && currentUser.level === 'S') currentUser = SUPER_USER;
+
+  // 寫回 Sheets（把 S 帳號也存進 users 分頁）
+  const allUsers = [SUPER_USER, ...getUsers()];
+  if (APPS_SCRIPT_URL) {
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveUsers', users: allUsers })
+    }).then(r => r.json()).then(d => {
+      if (d.ok) toast('密碼已更新並同步至 Sheets ✓');
+      else toast('密碼更新失敗：' + (d.error || ''));
+    }).catch(() => toast('網路錯誤，密碼僅暫時更新'));
+  }
+
+  document.getElementById('changepw-modal').classList.remove('open');
+  toast('密碼已修改 ✓');
+}
 let currentUser=null, appMode=null;
 
 // 層級 A 帳號從 Sheets 載入，存於此變數
@@ -958,7 +1027,14 @@ function startApp(){
     const restored=restoreData();
     renderMain();renderDetail();renderProjects();renderShuWu();updateTimestamp();
     if(restored)toast('\u5df2\u81ea\u52d5\u9084\u539f\u4e0a\u6b21\u8cc7\u6599 \u2713');
-    if(APPS_SCRIPT_URL){fetch(APPS_SCRIPT_URL+'?action=load').then(r=>r.json()).then(d=>{if(Array.isArray(d.users))sheetsUsers=d.users;renderUsers();}).catch(()=>renderUsers());}else{renderUsers();}
+    if(APPS_SCRIPT_URL){fetch(APPS_SCRIPT_URL+'?action=load').then(r=>r.json()).then(d=>{
+      if(Array.isArray(d.users)){
+        sheetsUsers=d.users.filter(u=>u.level!=='S');
+        const savedS=d.users.find(u=>u.level==='S'&&u.id===SUPER_USER.id);
+        if(savedS) SUPER_USER={...SUPER_USER, pw:savedS.pw};
+      }
+      renderUsers();
+    }).catch(()=>renderUsers());}else{renderUsers();}
     // Show add button and subtitle based on level
     const addBtn = document.getElementById('btn-add-user');
     if(addBtn) addBtn.style.display = isSuper ? '' : 'none';
@@ -1005,19 +1081,6 @@ window.addEventListener('beforeunload', e => {
     return e.returnValue;
   }
 });
-
-function syncToSheets(){
-  if(!APPS_SCRIPT_URL){toast('請先填入 Apps Script 網址');return}
-  const nav=document.getElementById('nav-sync');
-  nav.style.opacity='0.5';nav.style.pointerEvents='none';
-  document.getElementById('sync-status').textContent='同步中...';
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'save',data:{items,projects,shuWu,users:sheetsUsers,nextId,nextPid}})})
-  .then(r=>r.json()).then(d=>{
-    nav.style.opacity='';nav.style.pointerEvents='';
-    if(d.ok){const ts=new Date().toLocaleString('zh-TW',{hour:'2-digit',minute:'2-digit'});document.getElementById('sync-status').textContent='☁ 已同步 '+ts;document.getElementById('sync-status').style.color='#7ab8d6';clearDirty();toast('已同步至 Google Sheets ✓')}
-    else{document.getElementById('sync-status').textContent='同步失敗';toast('同步失敗')}
-  }).catch(()=>{nav.style.opacity='';nav.style.pointerEvents='';toast('網路錯誤')})
-}
 
 function loadFromSheets(){
   if(!APPS_SCRIPT_URL){toast('請先填入 Apps Script 網址');return}
@@ -1796,41 +1859,33 @@ function exportCSV() {
 // ── Google Sheets 設定 ────────────────────────────────────────
 // 部署 Apps Script 後，將 Web App 網址貼於此
 function syncToSheets() {
-  if (!APPS_SCRIPT_URL) {
-    toast('請先填入 Apps Script 網址');
-    return;
-  }
+  if (!APPS_SCRIPT_URL) { toast('請先填入 Apps Script 網址'); return; }
   const nav = document.getElementById('nav-sync');
-  nav.style.opacity = '0.5';
-  nav.style.pointerEvents = 'none';
+  nav.style.opacity = '0.5'; nav.style.pointerEvents = 'none';
   document.getElementById('sync-status').textContent = '同步中…';
-
+  const allUsers = [SUPER_USER, ...sheetsUsers];
   fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    body: JSON.stringify({
-      action: 'save',
-      data: { items, projects, shuWu, nextId, nextPid }
-    })
+    body: JSON.stringify({ action: 'save', data: { items, projects, shuWu, users: allUsers, nextId, nextPid } })
   })
   .then(r => r.json())
   .then(d => {
-    nav.style.opacity = '';
-    nav.style.pointerEvents = '';
+    nav.style.opacity = ''; nav.style.pointerEvents = '';
     if (d.ok) {
       const ts = new Date().toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit'});
-      document.getElementById('sync-status').textContent = `☁ 已同步 ${ts}`;
+      document.getElementById('sync-status').textContent = '☁ 已同步 ' + ts;
       document.getElementById('sync-status').style.color = '#7ab8d6';
+      clearDirty();
       toast('已同步至 Google Sheets ✓');
     } else {
       document.getElementById('sync-status').textContent = '同步失敗';
       toast('同步失敗：' + (d.error || '未知錯誤'));
     }
   })
-  .catch(err => {
-    nav.style.opacity = '';
-    nav.style.pointerEvents = '';
+  .catch(() => {
+    nav.style.opacity = ''; nav.style.pointerEvents = '';
     document.getElementById('sync-status').textContent = '同步失敗';
-    toast('網路錯誤，請確認 Apps Script 網址');
+    toast('網路錯誤，請確認連線');
   });
 }
 
