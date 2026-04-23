@@ -358,7 +358,7 @@ tbody tr:hover td { background: #fafaf8; }
 
 /* 觀看版：隱藏所有編輯功能 */
 .viewer-mode .page-header .btn-primary,
-.viewer-mode .page-header .btn-ghost,
+.viewer-mode .page-header .btn-ghost:not(.viewer-back),
 .viewer-mode .add-form,
 .viewer-mode .modal-overlay:not(#changepw-modal) { display: none !important; }
 
@@ -552,7 +552,7 @@ tbody tr:hover td { background: #fafaf8; }
       <div class="page-title">業務解說</div>
       <div class="page-sub">各業務流程說明與注意事項</div>
     </div>
-    <button class="btn btn-ghost" onclick="showPage('p1')">← 返回總表</button>
+    <button class="btn btn-ghost viewer-back" onclick="showPage('p1')">← 返回總表</button>
   </div>
   <div class="page-body">
     <div class="toolbar">
@@ -576,7 +576,7 @@ tbody tr:hover td { background: #fafaf8; }
       <div class="page-sub">進度追蹤與風險標記</div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-ghost" onclick="showPage('p1')">← 返回總表</button>
+      <button class="btn btn-ghost viewer-back" onclick="showPage('p1')">← 返回總表</button>
       <button class="btn btn-primary" onclick="toggleForm('form2')">＋ 新增專案</button>
     </div>
   </div>
@@ -658,6 +658,7 @@ tbody tr:hover td { background: #fafaf8; }
       <div class="page-title">庶務申請</div>
       <div class="page-sub">各類庶務表單申請對照表｜版次此處皆不列入，使用時請至 NAS 公告區核對最新版次</div>
     </div>
+    <button class="btn btn-ghost viewer-back" onclick="showPage('p1')">← 返回總表</button>
   </div>
   <div class="page-body">
     <div class="toolbar">
@@ -1218,9 +1219,9 @@ function loadFromSheetsJsonp() {
     const s = document.getElementById('jsonp-script');
     if (s) s.remove();
     delete window[cbName];
-    el.textContent = '⚠ 載入逾時（12秒），請重新整理';
+    el.textContent = '⚠ 載入逾時，請重新整理頁面';
     el.style.color = '#e24b4a';
-  }, 12000);
+  }, 30000);
 
   const script = document.createElement('script');
   script.id = 'jsonp-script';
