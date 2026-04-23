@@ -145,6 +145,7 @@ select:focus { outline: none; border-color: var(--accent); }
 .btn-sm { padding: 3px 9px; font-size: 11px; }
 .btn-ghost { border-color: transparent; background: transparent; }
 .btn-ghost:hover { background: var(--surface2); border-color: var(--border); }
+.viewer-back { color: var(--accent) !important; border-color: var(--accent) !important; font-weight: 500; }
 
 /* ── TABLE ── */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
@@ -360,7 +361,7 @@ tbody tr:hover td { background: #fafaf8; }
 .viewer-mode .page-header .btn-primary,
 .viewer-mode .page-header .btn-ghost:not(.viewer-back),
 .viewer-mode .add-form,
-.viewer-mode .modal-overlay:not(#changepw-modal) { display: none !important; }
+.viewer-mode .modal-overlay { display: none !important; }
 
 
 </style>
@@ -897,29 +898,6 @@ tbody tr:hover td { background: #fafaf8; }
   </div>
 </div>
 
-<!-- CHANGE PASSWORD MODAL -->
-<div class="modal-overlay" id="changepw-modal" onclick="closeChangePwModal(event)">
-  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px">
-    <div class="modal-title">修改層級 S 密碼</div>
-    <div class="field" style="margin-bottom:12px">
-      <label>目前密碼</label>
-      <input id="cpw-old" type="password" placeholder="請輸入目前密碼">
-    </div>
-    <div class="field" style="margin-bottom:12px">
-      <label>新密碼</label>
-      <input id="cpw-new" type="password" placeholder="請輸入新密碼（至少4碼）">
-    </div>
-    <div class="field" style="margin-bottom:16px">
-      <label>確認新密碼</label>
-      <input id="cpw-confirm" type="password" placeholder="再輸入一次新密碼">
-    </div>
-    <div class="login-error" id="cpw-error"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeChangePwModal()">取消</button>
-      <button class="btn btn-primary" onclick="doChangePw()">確認修改</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
