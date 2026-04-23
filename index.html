@@ -846,6 +846,30 @@ tbody tr:hover td { background: #fafaf8; }
   </div>
 </div>
 
+<!-- EDIT USER MODAL -->
+<div class="modal-overlay" id="edit-user-modal" onclick="closeEditUserModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-title">編輯帳號</div>
+    <input type="hidden" id="eu-id">
+    <div class="field" style="margin-bottom:12px">
+      <label>帳號 ID</label>
+      <input id="eu-id-display" disabled style="background:var(--surface2);color:var(--text3)">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>姓名</label>
+      <input id="eu-name" placeholder="顯示姓名">
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label>新密碼（留空則不變更）</label>
+      <input id="eu-pw" type="password" placeholder="請輸入新密碼">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('edit-user-modal').classList.remove('open')">取消</button>
+      <button class="btn btn-primary" onclick="saveEditUser()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -859,7 +883,7 @@ function saveUsers(a){localStorage.setItem('handover_users',JSON.stringify(a))}
 
 function doLogin(){
   const id=document.getElementById('login-user').value.trim();
-  const pw=document.getElementById('login-pass').value;
+  const pw=document.getElementById('login-pass').value.trim();
   const err=document.getElementById('login-error');
   err.textContent='';
   if(id===SUPER_USER.id&&pw===SUPER_USER.pw){currentUser=SUPER_USER;appMode='admin';startApp();return}
@@ -953,12 +977,16 @@ function loadFromSheets(){
 function renderUsers(){
   const tbody=document.getElementById('user-tbody');if(!tbody)return;
   const all=[SUPER_USER,...getUsers()];
+  const isS=currentUser&&currentUser.level==='S';
   tbody.innerHTML=all.map(u=>`<tr>
     <td style="font-family:var(--mono);font-size:12px">${u.id}</td>
     <td>${u.name}</td>
     <td><span class="badge ${u.level==='S'?'badge-s':'badge-blue'}">${u.level}</span></td>
     <td style="font-size:12px;color:var(--text3)">${u.created||'系統預設'}</td>
-    <td>${(u.level!=='S'&&currentUser&&currentUser.level==='S')?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`:'—'}</td>
+    <td style="white-space:nowrap">${u.level!=='S'&&isS?`
+      <button class="btn btn-sm" onclick="openEditUser('${u.id}')" style="color:var(--accent);border-color:#c5daea;margin-right:4px">編輯</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`:'—'}
+    </td>
   </tr>`).join('');
 }
 function showAddUserForm(){if(!currentUser||currentUser.level!=='S'){toast('權限不足');return}const f=document.getElementById('add-user-form');f.style.display=f.style.display==='none'?'block':'none'}
@@ -979,6 +1007,33 @@ function addUser(){
 function deleteUser(id){
   if(!confirm('確定要刪除帳號「'+id+'」嗎？'))return;
   saveUsers(getUsers().filter(u=>u.id!==id));renderUsers();toast('帳號已刪除');
+}
+function openEditUser(id){
+  const u=getUsers().find(x=>x.id===id);
+  if(!u)return;
+  document.getElementById('eu-id').value=id;
+  document.getElementById('eu-id-display').value=id;
+  document.getElementById('eu-name').value=u.name;
+  document.getElementById('eu-pw').value='';
+  document.getElementById('edit-user-modal').classList.add('open');
+}
+function closeEditUserModal(e){
+  if(e&&e.target!==document.getElementById('edit-user-modal'))return;
+  document.getElementById('edit-user-modal').classList.remove('open');
+}
+function saveEditUser(){
+  const id=document.getElementById('eu-id').value;
+  const name=document.getElementById('eu-name').value.trim();
+  const pw=document.getElementById('eu-pw').value.trim();
+  if(!name){toast('姓名不可空白');return}
+  const users=getUsers();
+  const idx=users.findIndex(u=>u.id===id);
+  if(idx===-1)return;
+  users[idx].name=name;
+  if(pw) users[idx].pw=pw;
+  saveUsers(users);
+  document.getElementById('edit-user-modal').classList.remove('open');
+  renderUsers();toast('帳號已更新 ✓');
 }
 
 function loadFromSheetsJsonp() {
