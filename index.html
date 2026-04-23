@@ -360,7 +360,7 @@ tbody tr:hover td { background: #fafaf8; }
 .viewer-mode .page-header .btn-primary,
 .viewer-mode .page-header .btn-ghost,
 .viewer-mode .add-form,
-.viewer-mode .modal-overlay { display: none !important; }
+.viewer-mode .modal-overlay:not(#changepw-modal) { display: none !important; }
 
 
 </style>
@@ -411,7 +411,6 @@ tbody tr:hover td { background: #fafaf8; }
     <div id="nav-s-section" style="display:none">
       <div class="nav-section" style="margin-top:8px">管理</div>
       <div class="nav-item" onclick="showPage('p5')" id="nav-p5"><span class="nav-icon">◈</span> 權限管理</div>
-      <div class="nav-item" onclick="openChangePwModal()"><span class="nav-icon">🔑</span> 修改密碼</div>
     </div>
     <div class="nav-section" style="margin-top:8px">帳號</div>
     <div class="nav-item" onclick="doLogout()"><span class="nav-icon">→</span> 登出</div>
@@ -711,6 +710,26 @@ tbody tr:hover td { background: #fafaf8; }
         <button class="btn" onclick="document.getElementById('add-user-form').style.display='none'">取消</button>
       </div>
     </div>
+
+    <!-- 層級 S 修改密碼區塊 -->
+    <div id="changepw-section" style="display:none;margin-top:28px">
+      <div class="add-form" style="max-width:480px">
+        <div class="form-title">修改層級 S 登入密碼</div>
+        <div class="form-grid form-grid-2" style="margin-bottom:12px">
+          <div class="field"><label>目前密碼</label><input id="cpw-old" type="password" placeholder="請輸入目前密碼"></div>
+          <div class="field"><label>新密碼（至少4碼）</label><input id="cpw-new" type="password" placeholder="請輸入新密碼"></div>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>確認新密碼</label>
+          <input id="cpw-confirm" type="password" placeholder="再輸入一次新密碼">
+        </div>
+        <div style="font-size:12px;color:var(--red);min-height:18px;margin-bottom:10px" id="cpw-error"></div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="doChangePw()">確認修改</button>
+          <button class="btn" onclick="clearChangePwForm()">清除</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -909,47 +928,37 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAOpTEyQWjPIt3
 // 層級 S 帳號（可透過修改密碼功能更新，存於 Sheets users 分頁）
 let SUPER_USER = {id:'110219', pw:'110219', name:'\u6797\u7dad\u8fb0', level:'S'};
 
-function openChangePwModal() {
-  document.getElementById('cpw-old').value = '';
-  document.getElementById('cpw-new').value = '';
-  document.getElementById('cpw-confirm').value = '';
+function clearChangePwForm() {
+  ['cpw-old','cpw-new','cpw-confirm'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('cpw-error').textContent = '';
-  document.getElementById('changepw-modal').classList.add('open');
-}
-function closeChangePwModal(e) {
-  if (e && e.target !== document.getElementById('changepw-modal')) return;
-  document.getElementById('changepw-modal').classList.remove('open');
 }
 function doChangePw() {
-  const oldPw  = toHalf(document.getElementById('cpw-old').value);
-  const newPw  = toHalf(document.getElementById('cpw-new').value);
+  const oldPw    = toHalf(document.getElementById('cpw-old').value);
+  const newPw    = toHalf(document.getElementById('cpw-new').value);
   const confirm2 = toHalf(document.getElementById('cpw-confirm').value);
-  const errEl  = document.getElementById('cpw-error');
+  const errEl    = document.getElementById('cpw-error');
   errEl.textContent = '';
 
-  if (oldPw !== SUPER_USER.pw) { errEl.textContent = '目前密碼錯誤'; return; }
+  if (oldPw !== SUPER_USER.pw) { errEl.textContent = '目前密碼錯誤，請重新輸入'; return; }
   if (newPw.length < 4)        { errEl.textContent = '新密碼至少需要 4 個字元'; return; }
   if (newPw !== confirm2)      { errEl.textContent = '兩次輸入的新密碼不一致'; return; }
 
-  // 更新記憶體中的 SUPER_USER
   SUPER_USER = { ...SUPER_USER, pw: newPw };
-  // 同步更新 currentUser
-  if (currentUser && currentUser.level === 'S') currentUser = SUPER_USER;
+  if (currentUser && currentUser.level === 'S') currentUser = { ...currentUser, pw: newPw };
 
-  // 寫回 Sheets（把 S 帳號也存進 users 分頁）
+  // 同步寫回 Sheets
   const allUsers = [SUPER_USER, ...getUsers()];
   if (APPS_SCRIPT_URL) {
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'saveUsers', users: allUsers })
     }).then(r => r.json()).then(d => {
-      if (d.ok) toast('密碼已更新並同步至 Sheets ✓');
-      else toast('密碼更新失敗：' + (d.error || ''));
-    }).catch(() => toast('網路錯誤，密碼僅暫時更新'));
+      toast(d.ok ? '密碼已修改並同步至 Sheets ✓' : '密碼修改失敗：' + (d.error||''));
+    }).catch(() => toast('網路錯誤，密碼暫時更新但未同步'));
+  } else {
+    toast('密碼已修改 ✓');
   }
-
-  document.getElementById('changepw-modal').classList.remove('open');
-  toast('密碼已修改 ✓');
+  clearChangePwForm();
 }
 let currentUser=null, appMode=null;
 
@@ -1040,6 +1049,9 @@ function startApp(){
     if(addBtn) addBtn.style.display = isSuper ? '' : 'none';
     const p5sub = document.getElementById('p5-sub');
     if(p5sub) p5sub.textContent = isSuper ? '層級 S 專屬：新增或刪除層級 A 帳號' : '帳號列表（僅供檢視）';
+    // 層級 S 顯示修改密碼區塊
+    const cpwSec = document.getElementById('changepw-section');
+    if(cpwSec) cpwSec.style.display = isSuper ? '' : 'none';
   }
 }
 
