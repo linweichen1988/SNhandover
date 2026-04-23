@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>業務交接系統 - 站務北段</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --bg: #f4f3f0;
+  --surface: #ffffff;
+  --surface2: #f9f8f6;
+  --border: #e2e0db;
+  --border2: #d0cdc7;
+  --text: #1a1917;
+  --text2: #6b6860;
+  --text3: #9e9c98;
+  --accent: #2d5f80;
+  --accent-light: #e8f0f5;
+  --green: #3b6d11;
+  --green-light: #eaf3de;
+  --amber: #854f0b;
+  --amber-light: #faeeda;
+  --red: #a32d2d;
+  --red-light: #fcebeb;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Noto Sans TC', sans-serif;
+  --transition: 0.18s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+button, input, select, textarea { font-family: var(--sans); }
+
+/* ── LAYOUT ── */
+.shell { display: flex; min-height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--text); color: #fff;
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 28px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.sidebar-logo .org { font-size: 10px; font-weight: 400; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 4px; }
+.sidebar-logo .title { font-size: 15px; font-weight: 500; line-height: 1.4; }
+.sidebar-logo .subtitle { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+.sidebar-nav { padding: 16px 0; flex: 1; }
+.nav-section { font-size: 10px; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); padding: 12px 20px 6px; text-transform: uppercase; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 20px; cursor: pointer; font-size: 13px;
+  color: rgba(255,255,255,0.65); transition: var(--transition);
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.nav-item.active { background: rgba(255,255,255,0.1); color: #fff; border-left-color: #7ab8d6; }
+.nav-item .nav-icon { width: 16px; text-align: center; font-size: 14px; }
+.nav-badge {
+  margin-left: auto; background: rgba(255,255,255,0.15);
+  font-size: 10px; font-family: var(--mono); padding: 1px 6px;
+  border-radius: 20px;
+}
+.nav-badge.red { background: #a32d2d; color: #fff; }
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 11px; color: rgba(255,255,255,0.3);
+  line-height: 1.7;
+}
+
+/* MAIN */
+.main { flex: 1; min-width: 0; padding: 0; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.page-header {
+  padding: 28px 32px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap;
+}
+.page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.page-sub { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+.page-body { padding: 24px 32px; }
+
+/* ── STATS ROW ── */
+.stats-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px 20px; flex: 1; min-width: 120px;
+}
+.stat-num { font-size: 26px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+.stat-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex; gap: 8px; align-items: center;
+  flex-wrap: wrap; margin-bottom: 16px;
+}
+.search-wrap { position: relative; }
+.search-wrap input {
+  width: 220px; padding: 7px 12px 7px 32px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); font-size: 13px;
+  transition: var(--transition);
+}
+.search-wrap input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,95,128,0.1); }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 12px; pointer-events: none; }
+select {
+  padding: 7px 28px 7px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface);
+  color: var(--text); font-size: 13px; cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6860'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  transition: var(--transition);
+}
+select:focus { outline: none; border-color: var(--accent); }
+.btn {
+  padding: 7px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface);
+  cursor: pointer; font-size: 13px; color: var(--text);
+  transition: var(--transition); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.btn:hover { background: var(--surface2); border-color: var(--border2); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
+.btn-primary:hover { background: #245070; border-color: #245070; }
+.btn-danger { color: var(--red); border-color: #f0b8b8; }
+.btn-danger:hover { background: var(--red-light); }
+.btn-sm { padding: 3px 9px; font-size: 11px; }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-ghost:hover { background: var(--surface2); border-color: var(--border); }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  padding: 10px 14px; text-align: left;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+  color: var(--text2); background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+thead th:first-child { border-radius: var(--radius-lg) 0 0 0; }
+thead th:last-child { border-radius: 0 var(--radius-lg) 0 0; }
+tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #fafaf8; }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.badge-blue { background: var(--accent-light); color: var(--accent); }
+.badge-green { background: var(--green-light); color: var(--green); }
+.badge-amber { background: var(--amber-light); color: var(--amber); }
+.badge-red { background: var(--red-light); color: var(--red); }
+.badge-gray { background: #f0ede8; color: var(--text2); }
+
+/* ── JUMP BUTTON ── */
+.jump-btn {
+  font-size: 11px; padding: 3px 9px; cursor: pointer;
+  color: var(--accent); border: 1px solid #c5daea;
+  border-radius: var(--radius); background: transparent;
+  font-family: var(--sans); transition: var(--transition);
+  white-space: nowrap;
+}
+.jump-btn:hover { background: var(--accent-light); }
+
+/* ── ADD FORM ── */
+.add-form {
+  display: none; margin-top: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 24px;
+}
+.form-title { font-size: 13px; font-weight: 500; margin-bottom: 16px; color: var(--text2); letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; }
+.form-grid { display: grid; gap: 12px; margin-bottom: 12px; }
+.form-grid-2 { grid-template-columns: 1fr 1fr; }
+.form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.form-grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; color: var(--text2); font-weight: 500; }
+.field input, .field select, .field textarea {
+  padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface2);
+  color: var(--text); font-size: 13px; transition: var(--transition);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--accent); background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(45,95,128,0.1);
+}
+.field textarea { resize: vertical; min-height: 64px; }
+.form-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+/* ── DETAIL CARDS ── */
+.detail-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 18px 22px; margin-bottom: 12px;
+  transition: var(--transition);
+}
+.detail-card.highlighted {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,95,128,0.1);
+}
+.detail-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.detail-cat { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+.detail-name { font-size: 15px; font-weight: 500; }
+.detail-meta { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 12px; font-size: 12px; }
+.detail-meta-item .lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+.detail-note {
+  background: var(--surface2); border-radius: var(--radius);
+  padding: 12px 14px; font-size: 13px; line-height: 1.8; color: var(--text2);
+  border-left: 3px solid var(--border2);
+}
+.detail-note-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-weight: 500; }
+.nas-link { font-family: var(--mono); font-size: 11px; color: var(--accent); word-break: break-all; }
+
+/* ── PROGRESS ── */
+.progress-wrap { display: flex; align-items: center; gap: 8px; }
+.progress-bar { flex: 1; height: 6px; background: var(--border); border-radius: 20px; overflow: hidden; min-width: 60px; }
+.progress-fill { height: 100%; border-radius: 20px; transition: width 0.3s; }
+.progress-input { width: 44px; padding: 2px 5px; font-size: 11px; font-family: var(--mono); border: 1px solid var(--border); border-radius: 4px; text-align: center; background: var(--surface2); color: var(--text); }
+.progress-input:focus { outline: none; border-color: var(--accent); }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 48px 20px; color: var(--text3); }
+.empty-icon { font-size: 32px; margin-bottom: 12px; }
+.empty-text { font-size: 13px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .sidebar { width: 180px; }
+  .page-body { padding: 16px; }
+  .page-header { padding: 18px 16px; }
+  .form-grid-3, .form-grid-4 { grid-template-columns: 1fr 1fr; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .stats-row { flex-direction: column; }
+  .detail-meta { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: relative; }
+  .sidebar-nav { display: flex; flex-wrap: wrap; padding: 8px; }
+  .nav-item { border-left: none; border-bottom: 3px solid transparent; padding: 8px 12px; }
+  .nav-item.active { border-bottom-color: #7ab8d6; }
+  .nav-section { display: none; }
+  .form-grid-3, .form-grid-4, .form-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  background: var(--text); color: #fff; padding: 10px 18px;
+  border-radius: var(--radius); font-size: 13px;
+  transform: translateY(60px); opacity: 0; transition: all 0.25s;
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── RISK INDICATOR ── */
+.risk-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+.risk-dot.red { background: #e24b4a; }
+.risk-dot.amber { background: #ef9f27; }
+.risk-dot.green { background: #639922; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 20px; }
+
+/* ── SORTABLE COLUMN HEADERS ── */
+.sort-th { position: relative; }
+.th-inner { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.sort-trigger {
+  display: inline-flex; align-items: center; gap: 2px;
+  cursor: pointer; padding: 1px 3px; border-radius: 3px;
+  color: var(--text3); font-size: 11px; line-height: 1;
+  background: none; border: none; font-family: var(--sans);
+}
+.sort-trigger:hover { color: var(--accent); background: var(--accent-light); }
+.sort-trigger.sorted { color: var(--accent); }
+.sort-dropdown {
+  position: absolute; top: calc(100% + 2px); left: 0; z-index: 9000;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius-lg); min-width: 152px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12); overflow: hidden; display: none;
+}
+.sort-dropdown.open { display: block; }
+.sort-option {
+  width: 100%; padding: 9px 14px; font-size: 12.5px; cursor: pointer;
+  color: var(--text); display: flex; align-items: center; gap: 9px;
+  border: none; background: none; text-align: left; font-family: var(--sans);
+}
+.sort-option:hover { background: var(--surface2); }
+.sort-option.active { color: var(--accent); font-weight: 500; background: var(--accent-light); }
+.sort-option .ico { font-size: 12px; width: 16px; flex-shrink: 0; text-align: center; }
+.sort-divider { height: 1px; background: var(--border); margin: 2px 0; }
+
+/* ── EDIT MODAL ── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; z-index:8000;
+  background:rgba(0,0,0,0.35); align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal-box {
+  background:var(--surface); border-radius:var(--radius-lg);
+  border:1px solid var(--border); padding:24px 28px;
+  width:min(760px,92vw); max-height:88vh; overflow-y:auto;
+}
+.modal-title { font-size:11px; font-weight:500; margin-bottom:18px; color:var(--text2); letter-spacing:.04em; text-transform:uppercase; }
+.modal-actions { display:flex; gap:8px; margin-top:18px; justify-content:flex-end; }
+
+
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px 44px;width:380px;box-shadow:0 8px 32px rgba(0,0,0,.08)}
+.login-logo{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase}
+.login-title{font-size:22px;font-weight:700;margin-bottom:6px}
+.login-sub{font-size:12px;color:var(--text3);margin-bottom:28px}
+.login-divider{display:flex;align-items:center;gap:12px;margin:18px 0}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.login-divider span{font-size:11px;color:var(--text3)}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:11px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.login-field input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:var(--sans);background:var(--surface2);color:var(--text);transition:var(--transition)}
+.login-field input:focus{outline:none;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(45,95,128,.1)}
+.login-btn-viewer{width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);cursor:pointer;font-size:13px;font-family:var(--sans);color:var(--text);transition:var(--transition);margin-bottom:8px}
+.login-btn-viewer:hover{background:var(--border)}
+.login-btn-admin{width:100%;padding:10px;border:none;border-radius:var(--radius);background:var(--accent);cursor:pointer;font-size:13px;font-family:var(--sans);color:#fff;font-weight:500;transition:var(--transition)}
+.login-btn-admin:hover{background:#245070}
+.login-error{font-size:12px;color:var(--red);margin-top:8px;min-height:18px}
+.user-info{padding:12px 20px 16px;border-top:1px solid rgba(255,255,255,.1)}
+.user-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;margin-bottom:6px;letter-spacing:.06em}
+.badge-s{background:#f0c040;color:#1a1917}
+.badge-a{background:#7ab8d6;color:#1a1917}
+.badge-v{background:rgba(255,255,255,.15);color:rgba(255,255,255,.7)}
+.user-name{font-size:13px;font-weight:500;color:#fff}
+.user-id{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;font-family:var(--mono)}
+.user-table{width:100%;border-collapse:collapse;font-size:13px}
+.user-table th{background:var(--surface2);padding:9px 14px;text-align:left;font-size:11px;font-weight:500;color:var(--text2);border-bottom:1px solid var(--border)}
+.user-table td{padding:10px 14px;border-bottom:.5px solid var(--border);vertical-align:middle}
+.user-table tr:last-child td{border-bottom:none}
+.user-table tr:hover td{background:var(--surface2)}
+.viewer-mode .edit-only{display:none!important}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">台中捷運 · 運務處 · 站務北段</div>
+    <div class="login-title">業務交接系統</div>
+    <div class="login-sub">請選擇進入方式</div>
+    <button class="login-btn-viewer" onclick="enterViewer()">進入系統（觀看版）</button>
+    <div class="login-divider"><span>後台登入</span></div>
+    <div class="login-field"><label>帳號</label><input id="login-user" type="text" placeholder="請輸入帳號" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"></div>
+    <div class="login-field"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn-admin" onclick="doLogin()">登入系統</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" class="shell" style="display:none">
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="org">台中捷運 · 運務處</div>
+    <div class="title">業務交接<br>管理系統</div>
+    <div class="subtitle" id="sys-subtitle">-</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">主要功能</div>
+    <div class="nav-item active" onclick="showPage('p1')" id="nav-p1"><span class="nav-icon">▦</span> 業務總表<span class="nav-badge" id="badge-p1">0</span></div>
+    <div class="nav-item" onclick="showPage('p2')" id="nav-p2"><span class="nav-icon">☰</span> 業務解說</div>
+    <div class="nav-item" onclick="showPage('p3')" id="nav-p3"><span class="nav-icon">◎</span> 未完成專案<span class="nav-badge red" id="badge-p3">0</span></div>
+    <div class="nav-item" onclick="showPage('p4')" id="nav-p4"><span class="nav-icon">□</span> 庶務申請</div>
+    <div id="nav-admin-section" style="display:none">
+      <div class="nav-section" style="margin-top:8px">資料儲存</div>
+      <div class="nav-item" onclick="syncToSheets()" id="nav-sync"><span class="nav-icon">☁</span> 同步至 Sheets</div>
+      <div class="nav-item" onclick="loadFromSheets()"><span class="nav-icon">↻</span> 從 Sheets 載入</div>
+      <div class="nav-section" style="margin-top:4px;font-size:9px;opacity:.5">本機備份</div>
+      <div class="nav-item" onclick="saveData()" style="padding:6px 20px;font-size:12px"><span class="nav-icon" style="font-size:12px">💾</span> 備份 JSON</div>
+      <div class="nav-item" onclick="document.getElementById('load-input').click()" style="padding:6px 20px;font-size:12px"><span class="nav-icon" style="font-size:12px">📂</span> 還原 JSON</div>
+      <input type="file" id="load-input" accept=".json" style="display:none" onchange="loadData(event)">
+      <div class="nav-section" style="margin-top:8px">工具</div>
+      <div class="nav-item" onclick="exportCSV()"><span class="nav-icon">↓</span> 匯出 CSV</div>
+      <div class="nav-item" onclick="window.print()"><span class="nav-icon">⎙</span> 列印</div>
+    </div>
+    <div id="nav-s-section" style="display:none">
+      <div class="nav-section" style="margin-top:8px">管理</div>
+      <div class="nav-item" onclick="showPage('p5')" id="nav-p5"><span class="nav-icon">◈</span> 權限管理</div>
+    </div>
+    <div class="nav-section" style="margin-top:8px">帳號</div>
+    <div class="nav-item" onclick="doLogout()"><span class="nav-icon">→</span> 登出</div>
+  </div>
+  <div class="user-info">
+    <div class="user-badge badge-v" id="user-badge-label">V</div>
+    <div class="user-name" id="user-display-name">-</div>
+    <div class="user-id" id="user-display-id">-</div>
+  </div>
+  <div class="sidebar-footer">
+    <div id="sync-status" style="margin-bottom:6px;font-size:10px;color:rgba(255,255,255,0.4)">-</div>
+    最後更新<br><span id="last-update" style="font-family:var(--mono);font-size:10px"></span>
+  </div>
+</nav>
+<div class="main">
+
+<!-- PAGE 1: 業務總表 -->
+<div id="p1" class="page active">
+  <div class="page-header">
+    <div>
+      <div class="page-title">業務總表</div>
+      <div class="page-sub">點選「查看說明」可跳轉至業務解說頁對應項目</div>
+    </div>
+    <button class="btn btn-primary" onclick="toggleForm('form1')">＋ 新增業務</button>
+  </div>
+  <div class="page-body">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">業務總數</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-daily">0</div><div class="stat-lbl">高頻業務（每日/週）</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-irreg">0</div><div class="stat-lbl">不定期業務</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-form">0</div><div class="stat-lbl">有對應表單/規章</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="q1" placeholder="搜尋業務…" oninput="renderMain()">
+      </div>
+      <select id="fcat1" onchange="renderMain()" style="width:120px">
+        <option value="">全部分類</option>
+      </select>
+      <select id="fc1" onchange="renderMain()" style="width:110px">
+        <option value="">全部週期</option>
+        <option>每日</option><option>每週</option><option>每月</option>
+        <option>每季</option><option>每年</option><option>不定期</option>
+      </select>
+      <select id="fd1" onchange="renderMain()" style="width:130px">
+        <option value="">全部部門</option>
+        <option>行政處</option><option>企劃處</option><option>財會處</option>
+        <option>人力資源處</option><option>工安處</option><option>資訊處</option>
+        <option>運務處本部</option><option>站務中心本部</option><option>維修處</option>
+        <option>工會/職福會</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sort-th"><div class="th-inner">業務分類<button class="sort-trigger" id="strig-cat1" onclick="openSortMenu('cat1',event)">↕</button><div class="sort-dropdown" id="smenu-cat1"><button class="sort-option" onclick="setSort1('cat','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort1('cat','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort1('cat','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">業務細項<button class="sort-trigger" id="strig-item1" onclick="openSortMenu('item1',event)">↕</button><div class="sort-dropdown" id="smenu-item1"><button class="sort-option" onclick="setSort1('item','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort1('item','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort1('item','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">週期<button class="sort-trigger" id="strig-cycle1" onclick="openSortMenu('cycle1',event)">↕</button><div class="sort-dropdown" id="smenu-cycle1"><button class="sort-option" onclick="setSort1('cycle','asc')"><span class="ico">↑</span>頻率高 → 低</button><button class="sort-option" onclick="setSort1('cycle','desc')"><span class="ico">↓</span>頻率低 → 高</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort1('cycle','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">時程<button class="sort-trigger" id="strig-sched1" onclick="openSortMenu('sched1',event)">↕</button><div class="sort-dropdown" id="smenu-sched1"><button class="sort-option" onclick="setSort1('sched','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort1('sched','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort1('sched','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">中心承辦人<button class="sort-trigger" id="strig-contact1" onclick="openSortMenu('contact1',event)">↕</button><div class="sort-dropdown" id="smenu-contact1"><button class="sort-option" onclick="setSort1('contact','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort1('contact','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort1('contact','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">外單位承辦人<button class="sort-trigger" id="strig-ext1" onclick="openSortMenu('ext1',event)">↕</button><div class="sort-dropdown" id="smenu-ext1"><button class="sort-option" onclick="setSort1('ext','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort1('ext','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort1('ext','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">對應部門<button class="sort-trigger" id="strig-dept1" onclick="openSortMenu('dept1',event)">↕</button><div class="sort-dropdown" id="smenu-dept1"><button class="sort-option" onclick="setSort1('dept','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort1('dept','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort1('dept','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th>NAS</th><th>線上表單</th><th>公務信件</th><th></th><th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody1"></tbody>
+    </table>
+    </div>
+
+    <div id="form1" class="add-form">
+      <div class="form-title">新增業務項目</div>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>業務分類 *</label>
+          <select id="n-cat">
+            <option value="">請選擇分類…</option>
+            <option>採購及預算</option>
+            <option>財產及物品管理</option>
+            <option>公告標誌管理</option>
+            <option>公文表單歸檔管理</option>
+            <option>車站違規業務</option>
+            <option>遺失物中心介面</option>
+            <option>週轉金管理</option>
+            <option>查核、檢點作業</option>
+            <option>上級交辦事項</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="field"><label>業務細項 *</label><input id="n-item" placeholder="例：出缺勤管理"></div>
+      </div>
+      <div class="form-grid form-grid-3">
+        <div class="field"><label>週期</label>
+          <select id="n-cycle">
+            <option>每日</option><option>每週</option><option selected>每月</option>
+            <option>每季</option><option>每年</option><option>不定期</option>
+          </select>
+        </div>
+        <div class="field"><label>時程</label><input id="n-sched" placeholder="例：每月5日前"></div>
+        <div class="field"><label>中心承辦人</label><input id="n-contact" placeholder="姓名"></div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>外單位承辦人</label><input id="n-ext" placeholder="姓名（可空白）"></div>
+        <div class="field"><label>對應部門</label>
+          <select id="n-dept">
+            <option>行政處</option><option>企劃處</option><option>財會處</option>
+            <option>人力資源處</option><option>工安處</option><option>資訊處</option>
+            <option>運務處本部</option><option>站務中心本部</option><option>維修處</option>
+            <option>工會/職福會</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid form-grid-3">
+        <div class="field"><label>NAS 連結</label><input id="n-nas" placeholder="\\\\NAS\\路徑（可空白）"></div>
+        <div class="field"><label>線上表單</label><input id="n-form-url" placeholder="https://… （可空白）"></div>
+        <div class="field"><label>公務信件</label><input id="n-mail" placeholder="信箱或說明（可空白）"></div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>對應表單編號</label><input id="n-form-no" placeholder="例：MR-HR-001（可空白）"></div>
+        <div class="field"><label>對應規章</label><input id="n-reg" placeholder="例：員工出勤管理辦法第5條（可空白）"></div>
+      </div>
+      <div class="field">
+        <label>業務說明 / 注意事項（將顯示於業務解說頁）</label>
+        <textarea id="n-note" placeholder="說明流程、注意事項、承辦SOP重點…"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addItem()">確認新增</button>
+        <button class="btn" onclick="toggleForm('form1')">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: 業務解說 -->
+<div id="p2" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">業務解說</div>
+      <div class="page-sub">各業務流程說明與注意事項</div>
+    </div>
+    <button class="btn btn-ghost" onclick="showPage('p1')">← 返回總表</button>
+  </div>
+  <div class="page-body">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="q2" placeholder="搜尋業務…" oninput="renderDetail()">
+      </div>
+      <select id="fc2" onchange="renderDetail()" style="width:130px">
+        <option value="">全部分類</option>
+      </select>
+    </div>
+    <div id="detail-list"></div>
+  </div>
+</div>
+
+<!-- PAGE 3: 未完成專案 -->
+<div id="p3" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">未完成專案</div>
+      <div class="page-sub">進度追蹤與風險標記</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="showPage('p1')">← 返回總表</button>
+      <button class="btn btn-primary" onclick="toggleForm('form2')">＋ 新增專案</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="toolbar">
+      <select id="fr3" onchange="renderProjects()" style="width:120px">
+        <option value="">全部風險</option>
+        <option>特級</option><option>緊急</option><option>普通</option>
+      </select>
+      <select id="fd3" onchange="renderProjects()" style="width:110px">
+        <option value="">全部進度</option>
+        <option value="0">未開始 (0%)</option>
+        <option value="50">進行中 (&lt;100%)</option>
+        <option value="100">已完成 (100%)</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sort-th"><div class="th-inner">業務分類<button class="sort-trigger" id="strig-cat3" onclick="openSortMenu('cat3',event)">↕</button><div class="sort-dropdown" id="smenu-cat3"><button class="sort-option" onclick="setSort3('cat','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort3('cat','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort3('cat','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">風險<button class="sort-trigger" id="strig-risk3" onclick="openSortMenu('risk3',event)">↕</button><div class="sort-dropdown" id="smenu-risk3"><button class="sort-option" onclick="setSort3('risk','asc')"><span class="ico">↑</span>特級 → 普通</button><button class="sort-option" onclick="setSort3('risk','desc')"><span class="ico">↓</span>普通 → 特級</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort3('risk','')"><span class="ico">✕</span>清除排序（回預設）</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">細項說明<button class="sort-trigger" id="strig-item3" onclick="openSortMenu('item3',event)">↕</button><div class="sort-dropdown" id="smenu-item3"><button class="sort-option" onclick="setSort3('item','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort3('item','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort3('item','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th" style="min-width:160px"><div class="th-inner">進度<button class="sort-trigger" id="strig-pct3" onclick="openSortMenu('pct3',event)">↕</button><div class="sort-dropdown" id="smenu-pct3"><button class="sort-option" onclick="setSort3('pct','asc')"><span class="ico">↑</span>由低到高</button><button class="sort-option" onclick="setSort3('pct','desc')"><span class="ico">↓</span>由高到低</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort3('pct','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th>注意事項</th>
+          <th class="sort-th"><div class="th-inner">協同承辦<button class="sort-trigger" id="strig-owner3" onclick="openSortMenu('owner3',event)">↕</button><div class="sort-dropdown" id="smenu-owner3"><button class="sort-option" onclick="setSort3('owner','asc')"><span class="ico">↑</span>從 A → Z 排序</button><button class="sort-option" onclick="setSort3('owner','desc')"><span class="ico">↓</span>從 Z → A 排序</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort3('owner','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th class="sort-th"><div class="th-inner">預計完成<button class="sort-trigger" id="strig-due3" onclick="openSortMenu('due3',event)">↕</button><div class="sort-dropdown" id="smenu-due3"><button class="sort-option" onclick="setSort3('due','asc')"><span class="ico">↑</span>日期由早到晚</button><button class="sort-option" onclick="setSort3('due','desc')"><span class="ico">↓</span>日期由晚到早</button><div class="sort-divider"></div><button class="sort-option" onclick="setSort3('due','')"><span class="ico">✕</span>清除排序</button></div></div></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody3"></tbody>
+    </table>
+    </div>
+
+    <div id="form2" class="add-form">
+      <div class="form-title">新增未完成專案</div>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>業務分類 *</label>
+          <select id="p-cat">
+            <option value="">請選擇分類…</option>
+            <option>採購及預算</option>
+            <option>財產及物品管理</option>
+            <option>公告標誌管理</option>
+            <option>公文表單歸檔管理</option>
+            <option>車站違規業務</option>
+            <option>遺失物中心介面</option>
+            <option>週轉金管理</option>
+            <option>查核、檢點作業</option>
+            <option>上級交辦事項</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="field"><label>細項說明 *</label><input id="p-item" placeholder="專案名稱或說明"></div>
+      </div>
+      <div class="form-grid form-grid-4">
+        <div class="field"><label>風險標記</label>
+          <select id="p-risk"><option>普通</option><option>緊急</option><option>特級</option></select>
+        </div>
+        <div class="field"><label>協同承辦</label><input id="p-owner" placeholder="姓名"></div>
+        <div class="field"><label>預計完成日</label><input id="p-due" type="date"></div>
+        <div class="field"><label>目前進度 (%)</label><input id="p-pct" type="number" min="0" max="100" value="0"></div>
+      </div>
+      <div class="field">
+        <label>注意事項</label>
+        <textarea id="p-note" placeholder="關鍵風險、阻礙、需交接人注意的事項…"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addProject()">確認新增</button>
+        <button class="btn" onclick="toggleForm('form2')">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 4: 庶務申請 -->
+<div id="p4" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">庶務申請</div>
+      <div class="page-sub">各類庶務表單申請對照表｜版次此處皆不列入，使用時請至 NAS 公告區核對最新版次</div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="q4" placeholder="搜尋申請項目…" oninput="renderShuWu()">
+      </div>
+      <select id="fcat4" onchange="renderShuWu()" style="width:120px">
+        <option value="">全部類別</option>
+      </select>
+      <select id="fdept4" onchange="renderShuWu()" style="width:130px">
+        <option value="">全部對應單位</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>項次</th><th>類別</th><th>申請物件</th><th>樣態</th>
+          <th>對應單位</th><th>申請樣態/表單編號</th><th>對應規章</th><th>說明</th><th>備註</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody4"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+<!-- PAGE 5 -->
+<div id="p5" class="page">
+  <div class="page-header">
+    <div><div class="page-title">權限管理</div><div class="page-sub" id="p5-sub">帳號列表</div></div>
+    <button class="btn btn-primary edit-only" onclick="showAddUserForm()" id="btn-add-user" style="display:none">+ 新增帳號</button>
+  </div>
+  <div class="page-body">
+    <div class="table-wrap"><table class="user-table">
+      <thead><tr><th>帳號</th><th>姓名</th><th>層級</th><th>建立日期</th><th></th></tr></thead>
+      <tbody id="user-tbody"></tbody>
+    </table></div>
+    <div id="add-user-form" class="add-form" style="display:none;margin-top:20px">
+      <div class="form-title">新增層級 A 帳號</div>
+      <div class="form-grid form-grid-2" style="margin-bottom:12px">
+        <div class="field"><label>帳號（登入用）</label><input id="nu-id" placeholder="例：A001"></div>
+        <div class="field"><label>密碼</label><input id="nu-pw" type="password" placeholder="請設定密碼"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px"><label>姓名（顯示用）</label><input id="nu-name" placeholder="例：王小明"></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addUser()">確認新增</button>
+        <button class="btn" onclick="document.getElementById('add-user-form').style.display='none'">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app-screen -->
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">編輯業務項目</div>
+    <input type="hidden" id="e-id">
+    <div class="form-grid form-grid-2">
+      <div class="field"><label>業務分類 *</label>
+        <select id="e-cat">
+          <option value="">請選擇分類…</option>
+          <option>採購及預算</option>
+          <option>財產及物品管理</option>
+          <option>公告標誌管理</option>
+          <option>公文表單歸檔管理</option>
+          <option>車站違規業務</option>
+          <option>遺失物中心介面</option>
+          <option>週轉金管理</option>
+          <option>查核、檢點作業</option>
+          <option>上級交辦事項</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="field"><label>業務細項 *</label><input id="e-item"></div>
+    </div>
+    <div class="form-grid form-grid-3">
+      <div class="field"><label>週期</label>
+        <select id="e-cycle">
+          <option>每日</option><option>每週</option><option>每月</option>
+          <option>每季</option><option>每年</option><option>不定期</option>
+        </select>
+      </div>
+      <div class="field"><label>時程</label><input id="e-sched"></div>
+      <div class="field"><label>中心承辦人</label><input id="e-contact" placeholder="姓名"></div>
+    </div>
+    <div class="form-grid form-grid-2">
+      <div class="field"><label>外單位承辦人</label><input id="e-ext" placeholder="姓名（可空白）"></div>
+      <div class="field"><label>對應部門</label>
+        <select id="e-dept">
+          <option>行政處</option><option>企劃處</option><option>財會處</option>
+          <option>人力資源處</option><option>工安處</option><option>資訊處</option>
+          <option>運務處本部</option><option>站務中心本部</option><option>維修處</option>
+          <option>工會/職福會</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid form-grid-3">
+      <div class="field"><label>NAS 連結</label><input id="e-nas"></div>
+      <div class="field"><label>線上表單</label><input id="e-form-url"></div>
+      <div class="field"><label>公務信件</label><input id="e-mail"></div>
+    </div>
+    <div class="form-grid form-grid-2">
+      <div class="field"><label>對應表單編號</label><input id="e-form-no"></div>
+      <div class="field"><label>對應規章</label><input id="e-reg"></div>
+    </div>
+    <div class="field">
+      <label>業務說明 / 注意事項</label>
+      <textarea id="e-note" rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteItemFromModal()">刪除此業務</button>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeEditModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveItem()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROJECT MODAL -->
+<div class="modal-overlay" id="proj-modal" onclick="closeProjModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">編輯未完成專案</div>
+    <input type="hidden" id="ep-id">
+    <div class="form-grid form-grid-2">
+      <div class="field"><label>業務分類 *</label>
+        <select id="ep-cat">
+          <option value="">請選擇分類…</option>
+          <option>採購及預算</option>
+          <option>財產及物品管理</option>
+          <option>公告標誌管理</option>
+          <option>公文表單歸檔管理</option>
+          <option>車站違規業務</option>
+          <option>遺失物中心介面</option>
+          <option>週轉金管理</option>
+          <option>查核、檢點作業</option>
+          <option>上級交辦事項</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="field"><label>細項說明 *</label><input id="ep-item"></div>
+    </div>
+    <div class="form-grid form-grid-4">
+      <div class="field"><label>風險標記</label>
+        <select id="ep-risk"><option>普通</option><option>緊急</option><option>特級</option></select>
+      </div>
+      <div class="field"><label>協同承辦</label><input id="ep-owner" placeholder="姓名"></div>
+      <div class="field"><label>預計完成日</label><input id="ep-due" type="date"></div>
+      <div class="field"><label>目前進度 (%)</label><input id="ep-pct" type="number" min="0" max="100"></div>
+    </div>
+    <div class="field">
+      <label>注意事項</label>
+      <textarea id="ep-note" rows="3" placeholder="關鍵風險、阻礙、需交接人注意的事項…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteProjFromModal()">刪除此專案</button>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeProjModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveProject()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT SHUWU MODAL -->
+<div class="modal-overlay" id="shuwu-modal" onclick="closeShuwuModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">編輯庶務申請項目</div>
+    <input type="hidden" id="es-no">
+    <div class="form-grid form-grid-2">
+      <div class="field"><label>類別</label><input id="es-cat"></div>
+      <div class="field"><label>申請物件</label><input id="es-obj"></div>
+    </div>
+    <div class="form-grid form-grid-2">
+      <div class="field"><label>樣態</label><input id="es-state"></div>
+      <div class="field"><label>對應單位</label><input id="es-unit"></div>
+    </div>
+    <div class="field"><label>申請樣態 / 表單編號</label><input id="es-formNo"></div>
+    <div class="field"><label>對應規章</label><input id="es-reg"></div>
+    <div class="field"><label>說明</label><textarea id="es-note" rows="2"></textarea></div>
+    <div class="field"><label>備註</label><input id="es-remark"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteShuwuFromModal()">刪除此項目</button>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeShuwuModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveShuwu()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAOpTEyQWjPIt3k5TEtXuDTlonvu9eTE8mWXPcV9S-3my7yZRXMYX1DBcHbiUk2K9VEg/exec';
+const SUPER_USER = {id:'110219',pw:'110219',name:'林\u7dad\u8fb0',level:'S'};
+let currentUser=null, appMode=null;
+
+function getUsers(){try{return JSON.parse(localStorage.getItem('handover_users')||'[]')}catch(e){return[]}}
+function saveUsers(a){localStorage.setItem('handover_users',JSON.stringify(a))}
+
+function doLogin(){
+  const id=document.getElementById('login-user').value.trim();
+  const pw=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-error');
+  err.textContent='';
+  if(id===SUPER_USER.id&&pw===SUPER_USER.pw){currentUser=SUPER_USER;appMode='admin';startApp();return}
+  const found=getUsers().find(u=>u.id===id&&u.pw===pw);
+  if(found){currentUser=found;appMode='admin';startApp();return}
+  err.textContent='\u5e33\u865f\u6216\u5bc6\u78bc\u932f\u8aa4\uff0c\u8acb\u91cd\u65b0\u8f38\u5165';
+}
+function enterViewer(){currentUser={id:'guest',name:'\u8a2a\u5ba2',level:'V'};appMode='viewer';startApp()}
+function doLogout(){
+  currentUser=null;appMode=null;
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').textContent='';
+}
+
+function startApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='flex';
+  const isAdmin=appMode==='admin', isViewer=appMode==='viewer';
+  const isSuper=isAdmin&&currentUser.level==='S';
+  const badge=document.getElementById('user-badge-label');
+  badge.textContent=currentUser.level;
+  badge.className='user-badge '+(currentUser.level==='S'?'badge-s':currentUser.level==='A'?'badge-a':'badge-v');
+  document.getElementById('user-display-name').textContent=currentUser.name;
+  document.getElementById('user-display-id').textContent=isViewer?'\u89c0\u770b\u6a21\u5f0f':'ID: '+currentUser.id;
+  document.getElementById('sys-subtitle').textContent=isViewer?'\u89c0\u770b\u7248':isSuper?'\u5f8c\u53f0\u7ba1\u7406':'\u5f8c\u53f0\u7de8\u8f2f';
+  document.getElementById('nav-admin-section').style.display=isAdmin?'':'none';
+  document.getElementById('nav-s-section').style.display=isAdmin?'':'none';
+  document.body.classList.toggle('viewer-mode',isViewer);
+  if(isViewer){
+    applyViewerRestrictions();
+    document.getElementById('sync-status').textContent='\u8f09\u5165\u4e2d...';
+    loadFromSheetsJsonp();
+  } else {
+    const restored=restoreData();
+    renderMain();renderDetail();renderProjects();renderShuWu();updateTimestamp();
+    if(restored)toast('\u5df2\u81ea\u52d5\u9084\u539f\u4e0a\u6b21\u8cc7\u6599 \u2713');
+    renderUsers();
+    // Show add button and subtitle based on level
+    const addBtn = document.getElementById('btn-add-user');
+    if(addBtn) addBtn.style.display = isSuper ? '' : 'none';
+    const p5sub = document.getElementById('p5-sub');
+    if(p5sub) p5sub.textContent = isSuper ? '層級 S 專屬：新增或刪除層級 A 帳號' : '帳號列表（僅供檢視）';
+  }
+}
+
+function applyViewerRestrictions(){
+  document.addEventListener('contextmenu',e=>e.preventDefault());
+  document.addEventListener('keydown',e=>{
+    const k=e.key.toLowerCase();
+    if(e.ctrlKey&&['c','a','s','p','u'].includes(k)){e.preventDefault();return false}
+    if(e.key==='F12'||e.key==='PrintScreen'){e.preventDefault();return false}
+  });
+  document.addEventListener('dragstart',e=>e.preventDefault());
+  document.body.style.userSelect='none';
+  document.body.style.webkitUserSelect='none';
+}
+
+function syncToSheets(){
+  if(!APPS_SCRIPT_URL){toast('請先填入 Apps Script 網址');return}
+  const nav=document.getElementById('nav-sync');
+  nav.style.opacity='0.5';nav.style.pointerEvents='none';
+  document.getElementById('sync-status').textContent='同步中...';
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'save',data:{items,projects,shuWu,nextId,nextPid}})})
+  .then(r=>r.json()).then(d=>{
+    nav.style.opacity='';nav.style.pointerEvents='';
+    if(d.ok){const ts=new Date().toLocaleString('zh-TW',{hour:'2-digit',minute:'2-digit'});document.getElementById('sync-status').textContent='☁ 已同步 '+ts;document.getElementById('sync-status').style.color='#7ab8d6';toast('已同步至 Google Sheets ✓')}
+    else{document.getElementById('sync-status').textContent='同步失敗';toast('同步失敗')}
+  }).catch(()=>{nav.style.opacity='';nav.style.pointerEvents='';toast('網路錯誤')})
+}
+
+function loadFromSheets(){
+  if(!APPS_SCRIPT_URL){toast('請先填入 Apps Script 網址');return}
+  document.getElementById('sync-status').textContent='載入中...';
+  fetch(APPS_SCRIPT_URL+'?action=load').then(r=>r.json()).then(d=>{
+    if(!d.ok)throw new Error(d.error);
+    if(Array.isArray(d.items)&&d.items.length>0)items=d.items;
+    if(Array.isArray(d.projects))projects=d.projects;
+    if(Array.isArray(d.shuWu)&&d.shuWu.length>0)shuWu=d.shuWu;
+    if(d.nextId)nextId=d.nextId;if(d.nextPid)nextPid=d.nextPid;
+    persistData();renderMain();renderDetail();renderProjects();renderShuWu();updateTimestamp();
+    const ts=new Date().toLocaleString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('sync-status').textContent='☁ 已載入 '+ts;
+    document.getElementById('sync-status').style.color='#7ab8d6';
+    toast('已從 Google Sheets 載入 ✓');
+  }).catch(err=>{toast('載入失敗：'+err.message)})
+}
+
+function renderUsers(){
+  const tbody=document.getElementById('user-tbody');if(!tbody)return;
+  const all=[SUPER_USER,...getUsers()];
+  tbody.innerHTML=all.map(u=>`<tr>
+    <td style="font-family:var(--mono);font-size:12px">${u.id}</td>
+    <td>${u.name}</td>
+    <td><span class="badge ${u.level==='S'?'badge-s':'badge-blue'}">${u.level}</span></td>
+    <td style="font-size:12px;color:var(--text3)">${u.created||'系統預設'}</td>
+    <td>${(u.level!=='S'&&currentUser&&currentUser.level==='S')?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`:'—'}</td>
+  </tr>`).join('');
+}
+function showAddUserForm(){if(!currentUser||currentUser.level!=='S'){toast('權限不足');return}const f=document.getElementById('add-user-form');f.style.display=f.style.display==='none'?'block':'none'}
+function addUser(){
+  const id=document.getElementById('nu-id').value.trim();
+  const pw=document.getElementById('nu-pw').value.trim();
+  const name=document.getElementById('nu-name').value.trim();
+  if(!id||!pw||!name){toast('請填寫所有欄位');return}
+  if(id===SUPER_USER.id){toast('此帳號 ID 已被使用');return}
+  const users=getUsers();
+  if(users.find(u=>u.id===id)){toast('此帳號 ID 已存在');return}
+  users.push({id,pw,name,level:'A',created:new Date().toLocaleDateString('zh-TW')});
+  saveUsers(users);
+  ['nu-id','nu-pw','nu-name'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('add-user-form').style.display='none';
+  renderUsers();toast('帳號已新增 ✓');
+}
+function deleteUser(id){
+  if(!confirm('確定要刪除帳號「'+id+'」嗎？'))return;
+  saveUsers(getUsers().filter(u=>u.id!==id));renderUsers();toast('帳號已刪除');
+}
+
+function loadFromSheetsJsonp() {
+  const el = document.getElementById('sync-status');
+  el.textContent = '載入中…';
+
+  // 使用固定 callback 名稱，避免動態名稱被快取或攔截
+  const cbName = '__handoverLoad__';
+  let timer;
+
+  // 清除舊的 callback 和 script
+  const oldScript = document.getElementById('jsonp-script');
+  if (oldScript) oldScript.remove();
+  delete window[cbName];
+
+  window[cbName] = function(d) {
+    clearTimeout(timer);
+    const s = document.getElementById('jsonp-script');
+    if (s) s.remove();
+    delete window[cbName];
+
+    if (!d || !d.ok) {
+      el.textContent = '⚠ 載入失敗，請重新整理';
+      el.style.color = '#e24b4a';
+      return;
+    }
+    if (Array.isArray(d.items) && d.items.length > 0) items = d.items;
+    if (Array.isArray(d.projects)) projects = d.projects;
+    if (Array.isArray(d.shuWu) && d.shuWu.length > 0) shuWu = d.shuWu;
+    if (d.nextId) nextId = d.nextId;
+    if (d.nextPid) nextPid = d.nextPid;
+    // 重新渲染所有分頁
+    renderMain();
+    renderDetail();
+    renderProjects();
+    if (typeof renderShuWu === 'function') renderShuWu();
+    updateTimestamp();
+    const ts = new Date().toLocaleString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+    el.textContent = '☁ 資料已更新 ' + ts;
+    el.style.color = '#7ab8d6';
+  };
+
+  timer = setTimeout(() => {
+    const s = document.getElementById('jsonp-script');
+    if (s) s.remove();
+    delete window[cbName];
+    el.textContent = '⚠ 載入逾時（12秒），請重新整理';
+    el.style.color = '#e24b4a';
+  }, 12000);
+
+  const script = document.createElement('script');
+  script.id = 'jsonp-script';
+  // 加上時間戳避免瀏覽器快取舊資料
+  script.src = 'https://script.google.com/macros/s/AKfycbyAOpTEyQWjPIt3k5TEtXuDTlonvu9eTE8mWXPcV9S-3my7yZRXMYX1DBcHbiUk2K9VEg/exec?action=load&callback=' + cbName + '&t=' + Date.now();
+  script.onerror = () => {
+    clearTimeout(timer);
+    if (script.parentNode) script.remove();
+    delete window[cbName];
+    el.textContent = '⚠ 網路錯誤，請確認網路連線';
+    el.style.color = '#e24b4a';
+  };
+  document.head.appendChild(script);
+}
+
+loadFromSheetsJsonp();
+
+// ── 觀看版防護 ────────────────────────────────────────────────
+// 停用右鍵
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// 停用鍵盤快捷鍵
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  // 停用 Ctrl+C, Ctrl+A, Ctrl+S, Ctrl+P, Ctrl+U（檢視原始碼）
+  if (e.ctrlKey && ['c','a','s','p','u'].includes(k)) {
+    e.preventDefault();
+    return false;
+  }
+  // 停用 F12（開發者工具）
+  if (e.key === 'F12') {
+    e.preventDefault();
+    return false;
+  }
+  // 停用 PrintScreen
+  if (e.key === 'PrintScreen') {
+    e.preventDefault();
+    navigator.clipboard?.writeText('').catch(()=>{});
+    return false;
+  }
+});
+
+// 停用拖曳選取
+document.addEventListener('dragstart', e => e.preventDefault());
+
+
+
+// ── DATA ──────────────────────────────────────────────────────
+let items = [
+  // ── 1. 採購及預算業務 ──────────────────────────────────────────
+  {id:1,  cat:'採購及預算', item:'年度預算編列彙整（段辦）',      cycle:'每年',   sched:'',          contact:'林維辰', dept:'財會處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'協助站務中心年度預算編列暨各單位需求調查及彙整，對應單位包含運務處、行政處、工安處、資訊處。'},
+  {id:2,  cat:'採購及預算', item:'年度預算編列彙整（車站）',      cycle:'每年',   sched:'',          contact:'林維辰', dept:'財會處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:''},
+  {id:3,  cat:'採購及預算', item:'小額採購案件辦理',              cycle:'不定期', sched:'',          contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'辦理段內小額採購案件。'},
+  {id:4,  cat:'採購及預算', item:'公務機車電池更換及代管',        cycle:'每月',   sched:'每月定期',  contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'每月公務機車執行養護及更換電池排程；代管相關事宜。'},
+
+  // ── 2. 財產及物品管理 ──────────────────────────────────────────
+  {id:5,  cat:'財產及物品管理', item:'工安防護用具半年檢作業',           cycle:'每年',   sched:'上下半年各一次', contact:'林維辰', dept:'工安處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'排程訂定、回收及歸還之執行。'},
+  {id:6,  cat:'財產及物品管理', item:'車站文具及備品數量申請配發',        cycle:'每月',   sched:'',               contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'每月車站文具、醫藥箱備品、資訊耗材、女性用品及尿布等，數量彙整、申請及配發。'},
+  {id:7,  cat:'財產及物品管理', item:'非設備類家電修繕及保固辦理',        cycle:'不定期', sched:'',               contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'站務中心採購之非設備類家電及物品，修繕及保固相關事宜辦理。'},
+  {id:8,  cat:'財產及物品管理', item:'段辦耗材備品及儲藏室庫存管理',      cycle:'不定期', sched:'',               contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'段辦相關耗材及備品管理，儲藏室庫存管理及進出庫事宜。'},
+  {id:9,  cat:'財產及物品管理', item:'大型活動物資調度',                  cycle:'不定期', sched:'依活動時程',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'協助大型活動（含各項演練）桌、椅、無線電及相關物資調度。'},
+  {id:10, cat:'財產及物品管理', item:'同仁年度個人配備協助套量配發',      cycle:'每年',   sched:'',               contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'制服、安全鞋等個人配備協助套量及配發。'},
+  {id:11, cat:'財產及物品管理', item:'大型公務車輛借用及駕駛',            cycle:'不定期', sched:'',               contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'不定期大型公務車輛借用及駕駛，以利配送任務。'},
+  {id:12, cat:'財產及物品管理', item:'段內財產物品調撥及系統進出帳',      cycle:'每月',   sched:'',               contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'每月段內物品財產調撥及系統進出帳申請及異動管理作業。'},
+  {id:13, cat:'財產及物品管理', item:'車站滅火器年度汰換及檢點表配發',    cycle:'每年',   sched:'',               contact:'林維辰', dept:'工安處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'車站滅火器年度汰換、檢點表配發、過期備品整備。'},
+  {id:14, cat:'財產及物品管理', item:'車站飲水機養護及報修',              cycle:'每月',   sched:'',               contact:'林維辰', dept:'行政處',      ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'每月車站飲水機相關養護作業及報修窗口。'},
+
+  // ── 3. 表單、公告及標誌管理 ───────────────────────────────────
+  {id:15, cat:'公告標誌管理', item:'車站簿冊及各類表單印製配發',      cycle:'每月',   sched:'',      contact:'林維辰', dept:'運務處本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'每月車站簿冊、各類表單印製及配發。'},
+  {id:16, cat:'公告標誌管理', item:'公告印製護貝及配發',              cycle:'不定期', sched:'',      contact:'林維辰', dept:'運務處本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'活動公告、臨時公告、緊急公告印製護貝及配發。'},
+  {id:17, cat:'公告標誌管理', item:'標誌貼紙數量彙整申請及配發',      cycle:'每月',   sched:'',      contact:'林維辰', dept:'運務處本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'每月標誌貼紙申請之數量彙整、申請及配發。'},
+
+  // ── 4. 公文表單通告歸檔管理 ───────────────────────────────────
+  {id:18, cat:'公文表單歸檔管理', item:'車站月報表回收整理及陳核',        cycle:'每月',   sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'車站每月消防、財產物品盤點、路權、週轉金自主查核及班表，進行回收整理及協助校對後，陳核相關主管用印。'},
+  {id:19, cat:'公文表單歸檔管理', item:'公文往返收送及簽收',              cycle:'不定期', sched:'',      contact:'林維辰', dept:'行政處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'執行段辦及站務中心之公文往返收送並進行簽收。'},
+  {id:20, cat:'公文表單歸檔管理', item:'通告傳簽及歸檔管理',              cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'站務中心及外單位之通告傳簽及歸檔作業管理。'},
+  {id:21, cat:'公文表單歸檔管理', item:'規章抽換及歸檔管理',              cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'規章抽換及相關歸檔管理作業。'},
+
+  // ── 5. 車站違規業務 ────────────────────────────────────────────
+  {id:22, cat:'車站違規業務', item:'違規表單裁處書回收檢核歸檔',         cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'旅客違規事項相關表單、裁處書、勸導單之回收、檢核及歸檔作業，後續送交站務中心陳核。'},
+
+  // ── 6. 遺失物中心介面業務 ──────────────────────────────────────
+  {id:23, cat:'遺失物中心介面', item:'遺失物中心業務支援',               cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:''},
+
+  // ── 7. 週轉金管理 ──────────────────────────────────────────────
+  {id:24, cat:'週轉金管理', item:'每月週轉金盤點及陳核',                 cycle:'每月',   sched:'',      contact:'林維辰', dept:'財會處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'協助每月週轉金盤點及表單送主管陳核。'},
+  {id:25, cat:'週轉金管理', item:'每週車站兌幣兌鈔申請評估',             cycle:'每週',   sched:'',      contact:'林維辰', dept:'財會處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'辦理每周車站兌幣兌鈔申請，並依申請數量進行評估。'},
+  {id:26, cat:'週轉金管理', item:'臺灣銀行兌幣兌鈔作業',                 cycle:'每週',   sched:'',      contact:'林維辰', dept:'財會處',       ext:'臺灣銀行', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'至臺灣銀行進行週轉金兌幣兌鈔作業（大面額兌換小面額）。'},
+  {id:27, cat:'週轉金管理', item:'每季AFC大抽週轉金申請及撥發',           cycle:'每季',   sched:'',      contact:'林維辰', dept:'財會處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'車站每季AFC大抽，週轉金申請及撥發。'},
+  {id:28, cat:'週轉金管理', item:'車站營收週轉金負值核銷',                cycle:'不定期', sched:'',      contact:'林維辰', dept:'財會處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'車站營收週轉金負值核銷作業申請及核銷。'},
+
+  // ── 8. 上級交辦事項 ────────────────────────────────────────────
+  {id:29, cat:'上級交辦事項', item:'規章審查及修正意見提供',              cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'協助規章審查及修正意見提供。'},
+  {id:30, cat:'上級交辦事項', item:'段辦及CCTV車站查核申請表單',          cycle:'每月',   sched:'每月初', contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'段辦及CCTV車站查核，每月初填具相關申請表單。'},
+  {id:31, cat:'上級交辦事項', item:'勤前指示總表整理彙整',                cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'勤前指示總表整理及彙整。'},
+  {id:32, cat:'上級交辦事項', item:'協助各副段長相關業務',                cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'協助各副段長其相關業務（消防、考核、差勤等）。'},
+  {id:33, cat:'上級交辦事項', item:'節慶活動物資整備及支援',              cycle:'不定期', sched:'依活動時程', contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'支援節慶活動事項，物資整備支援及活動日協助。'},
+  {id:34, cat:'上級交辦事項', item:'消防組訓物資調度及報告進度管控',      cycle:'每年',   sched:'上下半年各一次', contact:'林維辰', dept:'工安處', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'上、下半年消防組訓物資調度及組訓報告提報進度控管。'},
+  {id:35, cat:'查核、檢點作業', item:'每季工作通行證查核',                  cycle:'每季',   sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'每季站務北段之工作通行證查核辦理。'},
+  {id:36, cat:'上級交辦事項', item:'每季員工停車定期票申購彙整',          cycle:'每季',   sched:'',      contact:'林維辰', dept:'行政處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'每季員工停車定期票申購辦理彙整。'},
+  {id:37, cat:'上級交辦事項', item:'同仁訓練文件及派訓心得收集彙整',      cycle:'不定期', sched:'',      contact:'林維辰', dept:'人力資源處',   ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'站務同仁訓練文件、派訓心得收集彙整。'},
+  {id:38, cat:'上級交辦事項', item:'工安及稽核內控查核文件整備',          cycle:'不定期', sched:'',      contact:'林維辰', dept:'工安處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'配合工安處、稽核室內控查核文件整備。'},
+  {id:39, cat:'上級交辦事項', item:'CCTV畫面擷取留存歸檔（旅客受傷案件）',cycle:'不定期', sched:'案件發生後', contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'旅客受傷（含送醫、無須就醫）案件，CCTV畫面擷取留存歸檔作業。'},
+  {id:40, cat:'上級交辦事項', item:'中心業務承辦協調辦理',                cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'配合中心業務承辦各項協調及辦理。'},
+  {id:41, cat:'上級交辦事項', item:'其他主管臨時交辦事項',                cycle:'不定期', sched:'',      contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:''},
+
+  // ── 以下為 Excel 比對後新增（原 HTML 未涵蓋）─────────────────
+  {id:42, cat:'採購及預算',    item:'遺失物中心年度耗量預算',             cycle:'每年',   sched:'每年年初',  contact:'林維辰', dept:'站務中心本部', ext:'遺失物中心', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'遺失物中心年度耗量預算提列。'},
+  {id:43, cat:'財產及物品管理', item:'車站物品非系統報修處理',             cycle:'不定期', sched:'',          contact:'林維辰', dept:'行政處',       ext:'行政-李晉維（飲水機）、軌道組-粘祐瑜（SCD驗電棒）', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'車站物品發生損壞需報修時，處理非透過系統之報修流程，協調對應外單位窗口跟進。'},
+  {id:44, cat:'財產及物品管理', item:'財產季盤點、年終盤點及報廢',        cycle:'每季',   sched:'',          contact:'林維辰', dept:'行政處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'車站及段辦財產物品鑰匙季盤點、年終盤點；辦理財產移轉及年度報廢作業。'},
+  {id:45, cat:'公告標誌管理', item:'品質文件管理及水銷作業',          cycle:'每年',   sched:'每年一次',  contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'品質文件申請單管理；水銷作業每年辦理一次。'},
+  {id:46, cat:'公告標誌管理', item:'通告向車站發布及傳簽歸檔',        cycle:'不定期', sched:'',          contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'向車站發布通告；段辦紙本傳簽後歸檔。'},
+  {id:47, cat:'車站違規業務',   item:'菸害防制法違規紀錄',                cycle:'不定期', sched:'',          contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'旅客違反菸害防制法違規情形紀錄與後續處理。'},
+  {id:48, cat:'車站違規業務',   item:'路權設施設備破壞紀錄',              cycle:'不定期', sched:'',          contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'路權範圍內設施設備遭破壞之紀錄與通報。'},
+  {id:49, cat:'車站違規業務',   item:'CCTV月申請查閱及燒錄',             cycle:'每月',   sched:'每月申請',  contact:'林維辰', dept:'站務中心本部', ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'車站及段辦CCTV系統查閱權限月申請；辦理影像調閱及燒錄作業。'},
+  {id:50, cat:'查核、檢點作業',   item:'無線電年度檢點',                    cycle:'每年',   sched:'',          contact:'林維辰', dept:'資訊處',       ext:'電子廠', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'電子廠無線電年度檢點作業。'},
+  {id:51, cat:'查核、檢點作業',   item:'絕緣手套半年檢驗',                  cycle:'每年',   sched:'上下半年各一次', contact:'林維辰', dept:'工安處',  ext:'軌土廠', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'軌土廠絕緣手套半年度檢驗作業。'},
+  {id:52, cat:'公文表單歸檔管理', item:'物品公文每日收送',                cycle:'每日',   sched:'每日',      contact:'林維辰', dept:'行政處',       ext:'', nas:'', formUrl:'', mail:'', formNo:'', reg:'', note:'物品、公文表單文件每日往返行政大樓、站務中心、段辦、車站之收送作業。'},
+];
+
+let projects = [
+  {id:1, cat:'標誌工程', item:'南屯站出口指標更換施工', pct:60, note:'廠商已完成樣品送審，待工安處會勘通過後方可施工，預計下月初。', risk:'緊急', owner:'林維辰', due:'2026-05-30'},
+  {id:2, cat:'系統建置', item:'備品庫存管理系統上線', pct:25, note:'IT尚未完成API串接，進度落後約3週。需持續追蹤並回報幕僚長，若6月仍未完成需提報風險。', risk:'特級', owner:'資訊處（協作）', due:'2026-06-15'},
+  {id:3, cat:'預算採購', item:'115年辦公室文具耗材採購', pct:80, note:'三家廠商比價完成，最低標為和昇文具，待主管簽核後發採購單。', risk:'普通', owner:'林維辰', due:'2026-04-30'},
+  {id:4, cat:'活動支援', item:'115週年紀念活動規劃', pct:10, note:'初步構想提報完成，待企劃處確認方向後展開細部作業，目前仍在等覆。', risk:'緊急', owner:'林維辰', due:'2026-09-01'},
+  {id:5, cat:'標誌維護', item:'全線標誌貼紙庫存重新盤點', pct:45, note:'北段已完成，中段進行中，南段尚未開始。', risk:'普通', owner:'各站站長', due:'2026-05-15'},
+];
+
+let nextId = 53;
+let nextPid = projects.length + 1;
+let jumpTarget = null;
+
+// ── HELPERS ───────────────────────────────────────────────────
+function cycleBadge(c) {
+  return ({每日:'badge-red',每週:'badge-amber',每月:'badge-blue',每季:'badge-blue',每年:'badge-green',不定期:'badge-gray'})[c] || 'badge-gray';
+}
+function riskConfig(r) {
+  return ({
+    特級: {badge:'badge-red', dot:'red', prog:'#e24b4a'},
+    緊急: {badge:'badge-amber', dot:'amber', prog:'#ef9f27'},
+    普通: {badge:'badge-green', dot:'green', prog:'#639922'},
+  })[r] || {badge:'badge-gray', dot:'', prog:'#888'};
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function updateBadges() {
+  document.getElementById('badge-p1').textContent = items.length;
+  const total = projects.filter(p => p.pct < 100).length;
+  const badge = document.getElementById('badge-p3');
+  badge.textContent = total;
+  badge.className = 'nav-badge' + (total > 0 ? ' red' : '');
+}
+function updateTimestamp() {
+  const now = new Date();
+  document.getElementById('last-update').textContent =
+    now.toLocaleDateString('zh-TW') + ' ' + now.toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function showPage(pid, target) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(pid).classList.add('active');
+  document.getElementById('nav-' + pid).classList.add('active');
+  if (pid === 'p2') { jumpTarget = target || null; renderDetail(); }
+  if (pid === 'p3') renderProjects();
+  if (pid === 'p4') renderShuWu();
+  if (pid === 'p1') renderMain();
+  window.scrollTo(0, 0);
+}
+
+function toggleForm(id) {
+  const f = document.getElementById(id);
+  f.style.display = f.style.display === 'block' ? 'none' : 'block';
+  if (f.style.display === 'block') f.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ── RENDER MAIN ───────────────────────────────────────────────
+// ── SORT SYSTEM ───────────────────────────────────────────────
+let sort1 = { col: '', dir: '' };  // page 1 sort state
+let sort3 = { col: '', dir: '' };  // page 3 sort state
+
+function openSortMenu(id, e) {
+  e.stopPropagation();
+  const menu = document.getElementById('smenu-' + id);
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.sort-dropdown.open').forEach(m => m.classList.remove('open'));
+  if (!isOpen) menu.classList.add('open');
+}
+document.addEventListener('click', () => {
+  document.querySelectorAll('.sort-dropdown.open').forEach(m => m.classList.remove('open'));
+});
+
+function applySort(arr, col, dir) {
+  if (!dir) return arr;
+  if (col === 'cycle') {
+    const freqOrder = {'每日':0,'每週':1,'每月':2,'每季':3,'每年':4,'不定期':5};
+    return [...arr].sort((a, b) => {
+      const va = freqOrder[a.cycle] ?? 9;
+      const vb = freqOrder[b.cycle] ?? 9;
+      return dir === 'asc' ? va - vb : vb - va;
+    });
+  }
+  return [...arr].sort((a, b) => {
+    const va = (a[col] || '').toString();
+    const vb = (b[col] || '').toString();
+    const cmp = va.localeCompare(vb, 'zh-TW');
+    return dir === 'asc' ? cmp : -cmp;
+  });
+}
+
+function updateSortTriggers(tableNum, col, dir) {
+  // Reset all triggers for this table
+  document.querySelectorAll(`[id^="strig-"][id$="${tableNum}"]`).forEach(btn => {
+    btn.textContent = '↕';
+    btn.classList.remove('sorted');
+  });
+  if (col && dir) {
+    const btn = document.getElementById(`strig-${col}${tableNum}`);
+    if (btn) { btn.textContent = dir === 'asc' ? '↑' : '↓'; btn.classList.add('sorted'); }
+  }
+  // Mark active option in menus
+  document.querySelectorAll(`[id^="smenu-"][id$="${tableNum}"] .sort-option`).forEach(opt => opt.classList.remove('active'));
+  if (col && dir) {
+    const menu = document.getElementById(`smenu-${col}${tableNum}`);
+    if (menu) {
+      menu.querySelectorAll('.sort-option').forEach(opt => {
+        if ((dir === 'asc' && opt.textContent.includes('A → Z')) ||
+            (dir === 'asc' && opt.textContent.includes('早到晚')) ||
+            (dir === 'desc' && opt.textContent.includes('Z → A')) ||
+            (dir === 'desc' && opt.textContent.includes('晚到早'))) {
+          opt.classList.add('active');
+        }
+      });
+    }
+  }
+}
+
+function setSort1(col, dir) {
+  sort1 = { col, dir };
+  document.querySelectorAll('.sort-dropdown.open').forEach(m => m.classList.remove('open'));
+  updateSortTriggers('1', col, dir);
+  renderMain();
+}
+
+function setSort3(col, dir) {
+  sort3 = { col, dir };
+  document.querySelectorAll('.sort-dropdown.open').forEach(m => m.classList.remove('open'));
+  updateSortTriggers('3', col, dir);
+  renderProjects();
+}
+
+function renderMain() {
+  const q = (document.getElementById('q1').value || '').toLowerCase();
+  const fcat = document.getElementById('fcat1').value;
+  const fc = document.getElementById('fc1').value;
+  const fd = document.getElementById('fd1').value;
+
+  // Sync 業務分類 dropdown options dynamically
+  const cats = [...new Set(items.map(i => i.cat))].sort();
+  const catSel = document.getElementById('fcat1');
+  const prevCat = catSel.value;
+  catSel.innerHTML = '<option value="">全部分類</option>' + cats.map(c => `<option${c === prevCat ? ' selected' : ''}>${c}</option>`).join('');
+
+  let list = items.filter(i => {
+    if (fcat && i.cat !== fcat) return false;
+    if (fc && i.cycle !== fc) return false;
+    if (fd && i.dept !== fd) return false;
+    if (q && !(i.cat + i.item + i.contact + i.dept + i.ext + i.formNo + i.reg).toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  // Apply sort: if user picked a column, use it; else default = fixed category order
+  if (sort1.col && sort1.dir) {
+    list = applySort(list, sort1.col, sort1.dir);
+  } else {
+    const catOrder = ['採購及預算','財產及物品管理','公告標誌管理','公文表單歸檔管理','車站違規業務','遺失物中心介面','週轉金管理','查核、檢點作業','上級交辦事項'];
+    list = [...list].sort((a, b) => {
+      const ia = catOrder.indexOf(a.cat);
+      const ib = catOrder.indexOf(b.cat);
+      const ca = ia === -1 ? 99 : ia;
+      const cb = ib === -1 ? 99 : ib;
+      if (ca !== cb) return ca - cb;
+      return a.id - b.id;
+    });
+  }
+  const tbody = document.getElementById('tbody1');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="13"><div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合的業務項目</div></div></td></tr>`;
+  } else {
+    tbody.innerHTML = list.map(i => {
+      const nasShort = i.nas ? (i.nas.length > 22 ? i.nas.substring(0,22)+'…' : i.nas) : '';
+      const formShort = i.formUrl ? (i.formUrl.length > 22 ? i.formUrl.substring(0,22)+'…' : i.formUrl) : '';
+      return `
+      <tr>
+        <td><strong>${i.cat}</strong></td>
+        <td>${i.item}</td>
+        <td><span class="badge ${cycleBadge(i.cycle)}">${i.cycle}</span></td>
+        <td style="white-space:nowrap;font-size:12px;color:var(--text2)">${i.sched}</td>
+        <td style="font-size:12px">${i.contact}</td>
+        <td style="font-size:12px;color:var(--text2)">${i.ext || '<span style="color:var(--text3)">—</span>'}</td>
+        <td><span style="font-size:12px">${i.dept}</span></td>
+        <td style="max-width:120px">${nasShort ? `<span class="nas-link" title="${i.nas}">${nasShort}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+        <td style="max-width:120px">${formShort ? `<span class="nas-link" title="${i.formUrl}">${formShort}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+        <td style="font-size:12px;color:var(--text2)">${i.mail || '<span style="color:var(--text3)">—</span>'}</td>
+        <td><button class="jump-btn" onclick="showPage('p2',${i.id})">說明 →</button></td>
+        <td><button class="btn btn-sm" onclick="openEditModal(${i.id})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>
+      </tr>
+    `}).join('');
+  }
+  // Stats
+  document.getElementById('s-total').textContent = items.length;
+  document.getElementById('s-daily').textContent = items.filter(i => i.cycle === '每日' || i.cycle === '每週').length;
+  document.getElementById('s-irreg').textContent = items.filter(i => i.cycle === '不定期').length;
+  document.getElementById('s-form').textContent = items.filter(i => i.formNo || i.reg).length;
+  updateBadges();
+}
+
+// ── FORMAT NOTE ───────────────────────────────────────────────
+function formatNote(note) {
+  if (!note || !note.trim()) return '<span style="color:var(--color-text-tertiary,#9e9c98)">尚無說明</span>';
+
+  // Split on: newlines, or Chinese/numeric list markers like 1. 2. (1) （1） 一、 二、
+  const parts = note
+    .split(/(?=\n|(?<=[。；])\s*(?=\d+[.、．]|[（(]\d+[)）]|[一二三四五六七八九十]+[、．]))/g)
+    .flatMap(p => p.split(/\n/))
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  if (parts.length <= 1) {
+    return `<span style="line-height:1.9">${escHtml(note.trim())}</span>`;
+  }
+
+  return parts.map(p => {
+    // Check if line starts with a list marker
+    const isMarked = /^(\d+[.、．]|[（(]\d+[)）]|[一二三四五六七八九十]+[、．]|\-|•)/.test(p);
+    if (isMarked) {
+      return `<div style="display:flex;gap:6px;margin-bottom:4px;line-height:1.75">
+        <span style="flex-shrink:0;color:var(--accent,#2d5f80);font-weight:500;min-width:18px">${escHtml(p.match(/^([^\s　]+)/)[0])}</span>
+        <span>${escHtml(p.replace(/^([^\s　]+[\s　]*)/, ''))}</span>
+      </div>`;
+    }
+    return `<div style="margin-bottom:4px;line-height:1.75">${escHtml(p)}</div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── RENDER DETAIL ─────────────────────────────────────────────
+function renderDetail() {
+  const q = (document.getElementById('q2').value || '').toLowerCase();
+  const fc = document.getElementById('fc2').value;
+  // Update category filter options
+  const cats = [...new Set(items.map(i => i.cat))].sort();
+  const sel = document.getElementById('fc2');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">全部分類</option>' + cats.map(c => `<option${c === prev ? ' selected' : ''}>${c}</option>`).join('');
+  const list = items.filter(i => {
+    if (fc && i.cat !== fc) return false;
+    if (q && !(i.cat + i.item + i.note + i.dept).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const el = document.getElementById('detail-list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合的業務項目</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(i => `
+    <div class="detail-card ${jumpTarget === i.id ? 'highlighted' : ''}" id="dc-${i.id}">
+      <div class="detail-card-header">
+        <div>
+          <div class="detail-cat">${i.cat}</div>
+          <div class="detail-name">${i.item}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <span class="badge ${cycleBadge(i.cycle)}">${i.cycle}</span>
+          <span style="font-size:11px;color:var(--text3)">${i.sched}</span>
+        </div>
+      </div>
+      <div class="detail-meta">
+        <div class="detail-meta-item"><div class="lbl">中心承辦人</div>${i.contact}</div>
+        <div class="detail-meta-item"><div class="lbl">外單位承辦人</div>${i.ext || '<span style="color:var(--text3)">—</span>'}</div>
+        <div class="detail-meta-item"><div class="lbl">對應部門</div>${i.dept}</div>
+      </div>
+      ${(i.nas || i.formUrl || i.mail) ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;font-size:12px">
+        ${i.nas ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NAS 連結</div><span class="nas-link">${i.nas}</span></div>` : '<div></div>'}
+        ${i.formUrl ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">線上表單</div><span class="nas-link">${i.formUrl}</span></div>` : '<div></div>'}
+        ${i.mail ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">公務信件</div><span style="font-size:12px;color:var(--text2)">${i.mail}</span></div>` : '<div></div>'}
+      </div>` : ''}
+      ${(i.formNo || i.reg) ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:12px">
+        ${i.formNo ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">對應表單編號</div><span style="font-family:var(--mono);font-size:12px;color:var(--accent)">${i.formNo}</span></div>` : '<div></div>'}
+        ${i.reg ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">對應規章</div><span style="font-size:12px;color:var(--text2)">${i.reg}</span></div>` : '<div></div>'}
+      </div>` : ''}
+      <div class="detail-note">
+        <div class="detail-note-lbl">注意事項 / 說明</div>
+        ${formatNote(i.note)}
+      </div>
+    </div>
+  `).join('');
+  if (jumpTarget) {
+    setTimeout(() => {
+      const target = document.getElementById('dc-' + jumpTarget);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      jumpTarget = null;
+    }, 100);
+  }
+}
+
+// ── RENDER PROJECTS ───────────────────────────────────────────
+function renderProjects() {
+  const fr = document.getElementById('fr3').value;
+  const fd = document.getElementById('fd3').value;
+  let list = projects.filter(p => {
+    if (fr && p.risk !== fr) return false;
+    if (fd === '0' && p.pct !== 0) return false;
+    if (fd === '50' && (p.pct === 0 || p.pct === 100)) return false;
+    if (fd === '100' && p.pct !== 100) return false;
+    return true;
+  });
+
+  const riskOrder = {特級:0, 緊急:1, 普通:2};
+  const riskCmp = (a, b) => (riskOrder[a.risk] ?? 9) - (riskOrder[b.risk] ?? 9);
+
+  if (sort3.col && sort3.dir) {
+    if (sort3.col === 'risk') {
+      // User explicitly sorted by risk: asc = 特級→普通, desc = 普通→特級
+      list = [...list].sort((a, b) => sort3.dir === 'asc' ? riskCmp(a,b) : riskCmp(b,a));
+    } else if (sort3.col === 'pct') {
+      // Numeric sort for progress, with risk as tiebreaker
+      list = [...list].sort((a, b) => {
+        const cmp = sort3.dir === 'asc' ? a.pct - b.pct : b.pct - a.pct;
+        return cmp !== 0 ? cmp : riskCmp(a, b);
+      });
+    } else {
+      // Text sort on chosen column, risk as tiebreaker
+      list = [...list].sort((a, b) => {
+        const va = (a[sort3.col] || '').toString();
+        const vb = (b[sort3.col] || '').toString();
+        const cmp = sort3.dir === 'asc' ? va.localeCompare(vb,'zh-TW') : vb.localeCompare(va,'zh-TW');
+        return cmp !== 0 ? cmp : riskCmp(a, b);
+      });
+    }
+  } else {
+    // Default: risk severity only
+    list = [...list].sort(riskCmp);
+  }
+
+  const tbody = document.getElementById('tbody3');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合的專案項目</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(p => {
+    const rc = riskConfig(p.risk);
+    return `
+    <tr>
+      <td><strong>${p.cat}</strong></td>
+      <td><span class="risk-dot ${rc.dot}"></span><span class="badge ${rc.badge}">${p.risk}</span></td>
+      <td style="max-width:200px">${p.item}</td>
+      <td>
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${p.pct}%;background:${rc.prog}"></div>
+          </div>
+          <input class="progress-input" type="number" min="0" max="100" value="${p.pct}"
+            onchange="updatePct(${p.id},this.value)" title="修改進度">
+          <span style="font-size:11px;color:var(--text3)">%</span>
+        </div>
+      </td>
+      <td style="font-size:12px;max-width:200px;line-height:1.5;color:var(--text2)">${p.note}</td>
+      <td style="font-size:12px">${p.owner}</td>
+      <td style="font-size:12px;font-family:var(--mono);white-space:nowrap">${p.due || '—'}</td>
+      <td><button class="btn btn-sm" onclick="openProjModal(${p.id})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>
+    </tr>
+  `}).join('');
+  updateBadges();
+}
+
+// ── CRUD ──────────────────────────────────────────────────────
+function addItem() {
+  const cat = document.getElementById('n-cat').value;
+  const item = document.getElementById('n-item').value.trim();
+  if (!cat || !item) { toast('請選擇業務分類並填寫細項'); return; }
+  items.push({
+    id: nextId++, cat, item,
+    cycle: document.getElementById('n-cycle').value,
+    sched: document.getElementById('n-sched').value,
+    contact: document.getElementById('n-contact').value,
+    dept: document.getElementById('n-dept').value,
+    ext: document.getElementById('n-ext').value,
+    nas: document.getElementById('n-nas').value,
+    formUrl: document.getElementById('n-form-url').value,
+    mail: document.getElementById('n-mail').value,
+    formNo: document.getElementById('n-form-no').value,
+    reg: document.getElementById('n-reg').value,
+    note: document.getElementById('n-note').value,
+  });
+  ['n-item','n-sched','n-contact','n-ext','n-nas','n-form-url','n-mail','n-form-no','n-reg','n-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('n-cat').value = '';
+  toggleForm('form1');
+  renderMain();
+  updateTimestamp();
+  toast('業務已新增 ✓');
+}
+
+function openEditModal(id) {
+  const i = items.find(x => x.id === id);
+  if (!i) return;
+  document.getElementById('e-id').value = id;
+  document.getElementById('e-cat').value = i.cat || '';
+  document.getElementById('e-item').value = i.item || '';
+  document.getElementById('e-cycle').value = i.cycle || '每月';
+  document.getElementById('e-sched').value = i.sched || '';
+  document.getElementById('e-contact').value = i.contact || '';
+  document.getElementById('e-ext').value = i.ext || '';
+  document.getElementById('e-dept').value = i.dept || '行政處';
+  document.getElementById('e-nas').value = i.nas || '';
+  document.getElementById('e-form-url').value = i.formUrl || '';
+  document.getElementById('e-mail').value = i.mail || '';
+  document.getElementById('e-form-no').value = i.formNo || '';
+  document.getElementById('e-reg').value = i.reg || '';
+  document.getElementById('e-note').value = i.note || '';
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('edit-modal')) return;
+  document.getElementById('edit-modal').classList.remove('open');
+}
+
+function saveItem() {
+  const id = parseInt(document.getElementById('e-id').value);
+  const cat = document.getElementById('e-cat').value;
+  const item = document.getElementById('e-item').value.trim();
+  if (!cat || !item) { toast('請選擇業務分類並填寫細項'); return; }
+  const idx = items.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  items[idx] = { ...items[idx], cat, item,
+    cycle: document.getElementById('e-cycle').value,
+    sched: document.getElementById('e-sched').value,
+    contact: document.getElementById('e-contact').value,
+    ext: document.getElementById('e-ext').value,
+    dept: document.getElementById('e-dept').value,
+    nas: document.getElementById('e-nas').value,
+    formUrl: document.getElementById('e-form-url').value,
+    mail: document.getElementById('e-mail').value,
+    formNo: document.getElementById('e-form-no').value,
+    reg: document.getElementById('e-reg').value,
+    note: document.getElementById('e-note').value,
+  };
+  document.getElementById('edit-modal').classList.remove('open');
+  renderMain();
+  updateTimestamp();
+  toast('已儲存 ✓');
+}
+
+function deleteItemFromModal() {
+  const id = parseInt(document.getElementById('e-id').value);
+  if (!confirm('確定要刪除這筆業務嗎？')) return;
+  items = items.filter(i => i.id !== id);
+  document.getElementById('edit-modal').classList.remove('open');
+  renderMain();
+  updateTimestamp();
+  toast('已刪除');
+}
+
+function addProject() {
+  const cat = document.getElementById('p-cat').value;
+  const item = document.getElementById('p-item').value.trim();
+  if (!cat || !item) { toast('請選擇業務分類並填寫細項說明'); return; }
+  projects.push({
+    id: nextPid++, cat, item,
+    pct: Math.min(100, Math.max(0, parseInt(document.getElementById('p-pct').value) || 0)),
+    note: document.getElementById('p-note').value,
+    risk: document.getElementById('p-risk').value,
+    owner: document.getElementById('p-owner').value,
+    due: document.getElementById('p-due').value,
+  });
+  ['p-item','p-note','p-owner'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('p-cat').value = '';
+  document.getElementById('p-pct').value = 0;
+  document.getElementById('p-due').value = '';
+  toggleForm('form2');
+  renderProjects();
+  updateTimestamp();
+  toast('專案已新增 ✓');
+}
+
+function deleteProject(id) {
+  if (!confirm('確定要刪除這筆專案嗎？')) return;
+  projects = projects.filter(p => p.id !== id);
+  renderProjects();
+  updateTimestamp();
+  toast('已刪除');
+}
+
+function updatePct(id, val) {
+  const p = projects.find(p => p.id === id);
+  if (p) {
+    p.pct = Math.min(100, Math.max(0, parseInt(val) || 0));
+    renderProjects();
+    updateTimestamp();
+  }
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportCSV() {
+  const headers = ['業務分類','業務細項','週期','時程','中心承辦人','外單位承辦人','對應部門','NAS連結','線上表單','公務信件','表單編號','對應規章','說明'];
+  const rows = items.map(i =>
+    [i.cat, i.item, i.cycle, i.sched, i.contact, i.ext, i.dept, i.nas, i.formUrl, i.mail, i.formNo, i.reg, i.note]
+      .map(v => `"${(v||'').replace(/"/g,'""')}"`)
+      .join(',')
+  );
+  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = '業務交接總表.csv';
+  a.click();
+  toast('CSV 匯出完成 ↓');
+}
+
+// ── 儲存 / 載入 ───────────────────────────────────────────────
+// ── Google Sheets 設定 ────────────────────────────────────────
+// 部署 Apps Script 後，將 Web App 網址貼於此
+function syncToSheets() {
+  if (!APPS_SCRIPT_URL) {
+    toast('請先填入 Apps Script 網址');
+    return;
+  }
+  const nav = document.getElementById('nav-sync');
+  nav.style.opacity = '0.5';
+  nav.style.pointerEvents = 'none';
+  document.getElementById('sync-status').textContent = '同步中…';
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'save',
+      data: { items, projects, shuWu, nextId, nextPid }
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    nav.style.opacity = '';
+    nav.style.pointerEvents = '';
+    if (d.ok) {
+      const ts = new Date().toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+      document.getElementById('sync-status').textContent = `☁ 已同步 ${ts}`;
+      document.getElementById('sync-status').style.color = '#7ab8d6';
+      toast('已同步至 Google Sheets ✓');
+    } else {
+      document.getElementById('sync-status').textContent = '同步失敗';
+      toast('同步失敗：' + (d.error || '未知錯誤'));
+    }
+  })
+  .catch(err => {
+    nav.style.opacity = '';
+    nav.style.pointerEvents = '';
+    document.getElementById('sync-status').textContent = '同步失敗';
+    toast('網路錯誤，請確認 Apps Script 網址');
+  });
+}
+
+function loadFromSheets() {
+  if (!APPS_SCRIPT_URL) {
+    toast('請先填入 Apps Script 網址');
+    return;
+  }
+  document.getElementById('sync-status').textContent = '載入中…';
+
+  fetch(APPS_SCRIPT_URL + '?action=load')
+  .then(r => r.json())
+  .then(d => {
+    if (!d.ok) throw new Error(d.error);
+    if (Array.isArray(d.items) && d.items.length > 0) items = d.items;
+    if (Array.isArray(d.projects)) projects = d.projects;
+    if (Array.isArray(d.shuWu) && d.shuWu.length > 0) shuWu = d.shuWu;
+    if (d.nextId) nextId = d.nextId;
+    if (d.nextPid) nextPid = d.nextPid;
+    persistData();
+    renderMain();
+    updateTimestamp();
+    const ts = new Date().toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('sync-status').textContent = `☁ 已載入 ${ts}`;
+    document.getElementById('sync-status').style.color = '#7ab8d6';
+    toast('已從 Google Sheets 載入最新資料 ✓');
+  })
+  .catch(err => {
+    document.getElementById('sync-status').textContent = '載入失敗';
+    toast('載入失敗：' + err.message);
+  });
+}
+
+function saveData() {
+  const payload = JSON.stringify({ items, projects, nextId, nextPid, shuWu }, null, 2);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0,10);
+  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(payload);
+  a.download = `業務交接備份_${ts}.json`;
+  a.click();
+  toast('備份 JSON 已下載 💾');
+}
+
+function loadData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      // 寬鬆驗證：只要有 items 陣列就接受
+      if (!Array.isArray(d.items)) throw new Error('JSON 格式不符，找不到 items 欄位');
+      items = d.items;
+      projects = Array.isArray(d.projects) ? d.projects : [];
+      nextId = d.nextId || (items.length + 1);
+      nextPid = d.nextPid || (projects.length + 1);
+      if (Array.isArray(d.shuWu) && d.shuWu.length > 0) shuWu = d.shuWu;
+      persistData();
+      // 重新渲染所有分頁
+      renderMain();
+      if (typeof renderProjects === 'function') renderProjects();
+      if (typeof renderShuWu === 'function') renderShuWu();
+      updateTimestamp();
+      toast(`已還原 ${items.length} 筆業務、${projects.length} 筆專案 ✓`);
+    } catch(err) {
+      toast('還原失敗：' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+  e.target.value = '';
+}
+
+// ── localStorage 自動儲存 ──────────────────────────────────────
+const STORE_KEY = 'handover_data_v1';
+
+function persistData() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ items, projects, nextId, nextPid, shuWu }));
+  } catch(e) {}
+}
+
+function restoreData() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!Array.isArray(d.items) || !Array.isArray(d.projects)) return false;
+    items = d.items;
+    projects = d.projects;
+    nextId = d.nextId || (items.length + 1);
+    nextPid = d.nextPid || (projects.length + 1);
+    if (Array.isArray(d.shuWu) && d.shuWu.length > 0) shuWu = d.shuWu;
+    return true;
+  } catch(e) { return false; }
+}
+
+// Wrap all data-mutating actions to auto-persist
+const _addItem = addItem;
+function addItem() { _addItem(); persistData(); }
+const _saveItem = saveItem;
+function saveItem() { _saveItem(); persistData(); }
+const _deleteItemFromModal = deleteItemFromModal;
+function deleteItemFromModal() { _deleteItemFromModal(); persistData(); }
+const _addProject = addProject;
+function addProject() { _addProject(); persistData(); }
+const _deleteProject = deleteProject;
+function deleteProject(id) { _deleteProject(id); persistData(); }
+const _updatePct = updatePct;
+function updatePct(id, val) { _updatePct(id, val); persistData(); }
+
+// ── 庶務申請資料 ──────────────────────────────────────────────
+let shuWu = [
+  {no:1,  cat:'行政處', obj:'制服',       state:'到職、調職、復職', unit:'行政處', formNo:'TMRT-ADD-GEN-0-4093 工作（制）服領用申請表', reg:'TMRT-ADD-GEN-0-3008 工作（制）服申領及管理工作說明書', note:'電子檔登打完成後，傳送段辦幕僚審核並接續辦理', remark:'附件：復職申請書'},
+  {no:2,  cat:'行政處', obj:'制服',       state:'孕婦妊娠',         unit:'行政處', formNo:'TMRT-ADD-GEN-0-4094 工作（制）服孕婦領用申請表', reg:'TMRT-ADD-GEN-0-3008 工作（制）服申領及管理工作說明書', note:'電子檔登打完成後，傳送段辦幕僚審核並接續辦理', remark:'附件：媽媽手冊'},
+  {no:3,  cat:'行政處', obj:'制服',       state:'舊制服換發',       unit:'行政處', formNo:'TMRT-ADD-GEN-0-4095 工作（制）服汰換新申請表', reg:'TMRT-ADD-GEN-0-3008 工作（制）服申領及管理工作說明書', note:'電子檔登打完成後，傳送段辦幕僚審核並接續辦理', remark:'當年度發放件數為上限'},
+  {no:4,  cat:'行政處', obj:'E-tag',      state:'申請、換發',       unit:'行政處', formNo:'TMRT-ADD-GEN-0-4056 北屯機廠車輛進出申請表-員工版', reg:'TMRT-ADD-GEN-0-2018 北屯機廠門禁及停車管理辦法', note:'紙本填具，本人簽章後交付主管用印', remark:'一般情況需同時提交申請'},
+  {no:5,  cat:'行政處', obj:'E-tag',      state:'申請、換發',       unit:'行政處', formNo:'TMRT-ADD-GEN-0-4101 繳款單', reg:'TMRT-ADD-GEN-0-2018 北屯機廠門禁及停車管理辦法', note:'紙本填具，本人簽章後交付主管用印', remark:''},
+  {no:6,  cat:'行政處', obj:'E-tag',      state:'遺失',             unit:'行政處', formNo:'TMRT-ADD-GEN-0-4058 北屯機廠停車證遺失結書', reg:'TMRT-ADD-GEN-0-2018 北屯機廠門禁及停車管理辦法', note:'紙本填具，本人簽章後交付主管用印', remark:''},
+  {no:7,  cat:'工安處', obj:'反光背心',   state:'更換',             unit:'工安處', formNo:'無', reg:'無', note:'提交員編及姓名、背心尺寸及背心照片予段辦幕僚', remark:'舊款更新（站務升遷站）或新款破損皆可申請'},
+  {no:8,  cat:'工安處', obj:'安全鞋',     state:'故障、損壞',       unit:'工安處', formNo:'無', reg:'無', note:'領用之最新鞋款損壞後即可申請', remark:'2024/08/22 EIP公告'},
+  {no:9,  cat:'工安處', obj:'安全帽',     state:'故障、損壞',       unit:'工安處', formNo:'無', reg:'無', note:'提交員編及照片予段辦幕僚', remark:''},
+  {no:10, cat:'企劃處', obj:'員工定期票', state:'申購',             unit:'企劃處', formNo:'TMRT-PLD-GEN-0-4073 員工停車定期票申購表', reg:'TMRT-PLD-GEN-0-2035 員工停車定期票申購作業規定', note:'紙本填具，本人簽章後交付主管用印', remark:'初次申購、證件變更、資料異動者使用'},
+  {no:11, cat:'人資處', obj:'在職證明',   state:'申請',             unit:'人資處', formNo:'TMRT-HRD-GEN-0-4016 在職證明書申請表', reg:'無', note:'紙本填具，本人簽章即可', remark:''},
+  {no:12, cat:'人資處', obj:'健保加退',   state:'申請',             unit:'人資處', formNo:'TMRT-HRD-GEN-0-4021 健保（眷屬）加退保申請書', reg:'無', note:'紙本填具，本人簽章後可交付幕僚公文交換', remark:''},
+  {no:13, cat:'人資處', obj:'職名章',     state:'遺失、汰換',       unit:'人資處', formNo:'TMRT-ADD-GEN-0-4025 職名章更換申請單', reg:'無', note:'紙本填具，本人簽章即可', remark:'若樣態判定為需自付工本費時同時提交申請'},
+  {no:14, cat:'人資處', obj:'職名章',     state:'遺失、汰換',       unit:'人資處', formNo:'TMRT-ADD-GEN-0-4101 繳款單', reg:'（同上，若需自付工本費時適用）', note:'紙本填具，本人簽章後交付主管用印', remark:''},
+  {no:15, cat:'人資處', obj:'識別證',     state:'遺失、更改姓名',   unit:'人資處', formNo:'TMRT-HRD-GEN-0-4033 識別證補（換）發申請表', reg:'TMRT-HRD-GEN-0-2030 員工識別證管理要點', note:'紙本填具，本人簽章即可', remark:''},
+  {no:16, cat:'人資處', obj:'識別證',     state:'遺失、更改姓名',   unit:'人資處', formNo:'TMRT-HRD-GEN-0-4034 識別證遺失切結書', reg:'TMRT-HRD-GEN-0-2030 員工識別證管理要點', note:'紙本填具，本人簽章即可', remark:'若樣態判定為需自付工本費時同時提交申請'},
+  {no:17, cat:'人資處', obj:'識別證',     state:'遺失、更改姓名',   unit:'人資處', formNo:'TMRT-ADD-GEN-0-4101 繳款單', reg:'TMRT-HRD-GEN-0-2030 員工識別證管理要點', note:'紙本填具，本人簽章後交付主管用印', remark:''},
+  {no:18, cat:'人資處', obj:'背帶、識別證套', state:'遺失、汰換',   unit:'人資處', formNo:'無', reg:'無', note:'提交員編及照片予段辦幕僚', remark:'2年以上可更換'},
+  {no:19, cat:'運務處', obj:'值站包',     state:'申請、損壞',       unit:'運務處', formNo:'無', reg:'無', note:'向段辦幕僚申請即可', remark:'站務員轉任副站長或副站長損壞時申請'},
+  {no:20, cat:'財會處', obj:'計程車車費用', state:'營運中斷、颱風等', unit:'財會處', formNo:'無', reg:'無', note:'向段辦幕僚回報單據撥回', remark:'特殊狀況經值班班段授權'},
+];
+
+function renderShuWu() {
+  const q = (document.getElementById('q4').value || '').toLowerCase();
+  const fc = document.getElementById('fcat4').value;
+  const fd = document.getElementById('fdept4').value;
+
+  // Sync filter dropdowns
+  const cats = [...new Set(shuWu.map(r => r.cat))];
+  const catSel = document.getElementById('fcat4');
+  const prevC = catSel.value;
+  catSel.innerHTML = '<option value="">全部類別</option>' + cats.map(c => `<option${c===prevC?' selected':''}>${c}</option>`).join('');
+
+  const depts = [...new Set(shuWu.map(r => r.unit))];
+  const deptSel = document.getElementById('fdept4');
+  const prevD = deptSel.value;
+  deptSel.innerHTML = '<option value="">全部對應單位</option>' + depts.map(d => `<option${d===prevD?' selected':''}>${d}</option>`).join('');
+
+  const list = shuWu.filter(r => {
+    if (fc && r.cat !== fc) return false;
+    if (fd && r.unit !== fd) return false;
+    if (q && !(r.cat + r.obj + r.state + r.unit + r.formNo + r.note + r.remark).toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('tbody4');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合項目</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td style="font-size:12px;font-family:var(--mono);text-align:center">${r.no}</td>
+      <td><span class="badge badge-blue" style="font-size:11px">${r.cat}</span></td>
+      <td style="font-weight:500">${r.obj}</td>
+      <td style="font-size:12px;color:var(--text2)">${r.state}</td>
+      <td style="font-size:12px">${r.unit}</td>
+      <td style="font-size:11px;font-family:var(--mono);color:var(--accent);max-width:220px;line-height:1.5">${r.formNo || '<span style="color:var(--text3)">無</span>'}</td>
+      <td style="font-size:11px;color:var(--text2);max-width:180px;line-height:1.5">${r.reg || '<span style="color:var(--text3)">無</span>'}</td>
+      <td style="font-size:12px;color:var(--text2);max-width:200px;line-height:1.6">${r.note}</td>
+      <td style="font-size:11px;color:var(--text3);max-width:150px;line-height:1.5">${r.remark || '—'}</td>
+      <td><button class="btn btn-sm" onclick="openShuwuModal(${r.no})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>
+    </tr>
+  `).join('');
+}
+
+// ── PROJECT MODAL ─────────────────────────────────────────────
+function openProjModal(id) {
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('ep-id').value = id;
+  document.getElementById('ep-cat').value = p.cat || '';
+  document.getElementById('ep-item').value = p.item || '';
+  document.getElementById('ep-risk').value = p.risk || '普通';
+  document.getElementById('ep-owner').value = p.owner || '';
+  document.getElementById('ep-due').value = p.due || '';
+  document.getElementById('ep-pct').value = p.pct ?? 0;
+  document.getElementById('ep-note').value = p.note || '';
+  document.getElementById('proj-modal').classList.add('open');
+}
+function closeProjModal(e) {
+  if (e && e.target !== document.getElementById('proj-modal')) return;
+  document.getElementById('proj-modal').classList.remove('open');
+}
+function saveProject() {
+  const id = parseInt(document.getElementById('ep-id').value);
+  const cat = document.getElementById('ep-cat').value;
+  const item = document.getElementById('ep-item').value.trim();
+  if (!cat || !item) { toast('請選擇業務分類並填寫細項說明'); return; }
+  const idx = projects.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  projects[idx] = { ...projects[idx], cat, item,
+    risk: document.getElementById('ep-risk').value,
+    owner: document.getElementById('ep-owner').value,
+    due: document.getElementById('ep-due').value,
+    pct: Math.min(100, Math.max(0, parseInt(document.getElementById('ep-pct').value) || 0)),
+    note: document.getElementById('ep-note').value,
+  };
+  document.getElementById('proj-modal').classList.remove('open');
+  renderProjects();
+  updateTimestamp();
+  persistData();
+  toast('已儲存 ✓');
+}
+function deleteProjFromModal() {
+  const id = parseInt(document.getElementById('ep-id').value);
+  if (!confirm('確定要刪除這筆專案嗎？')) return;
+  projects = projects.filter(p => p.id !== id);
+  document.getElementById('proj-modal').classList.remove('open');
+  renderProjects();
+  updateTimestamp();
+  persistData();
+  toast('已刪除');
+}
+
+// ── SHUWU MODAL ───────────────────────────────────────────────
+function openShuwuModal(no) {
+  const r = shuWu.find(x => x.no === no);
+  if (!r) return;
+  document.getElementById('es-no').value = no;
+  document.getElementById('es-cat').value = r.cat || '';
+  document.getElementById('es-obj').value = r.obj || '';
+  document.getElementById('es-state').value = r.state || '';
+  document.getElementById('es-unit').value = r.unit || '';
+  document.getElementById('es-formNo').value = r.formNo || '';
+  document.getElementById('es-reg').value = r.reg || '';
+  document.getElementById('es-note').value = r.note || '';
+  document.getElementById('es-remark').value = r.remark || '';
+  document.getElementById('shuwu-modal').classList.add('open');
+}
+function closeShuwuModal(e) {
+  if (e && e.target !== document.getElementById('shuwu-modal')) return;
+  document.getElementById('shuwu-modal').classList.remove('open');
+}
+function saveShuwu() {
+  const no = parseInt(document.getElementById('es-no').value);
+  const idx = shuWu.findIndex(x => x.no === no);
+  if (idx === -1) return;
+  shuWu[idx] = { ...shuWu[idx],
+    cat: document.getElementById('es-cat').value.trim(),
+    obj: document.getElementById('es-obj').value.trim(),
+    state: document.getElementById('es-state').value.trim(),
+    unit: document.getElementById('es-unit').value.trim(),
+    formNo: document.getElementById('es-formNo').value.trim(),
+    reg: document.getElementById('es-reg').value.trim(),
+    note: document.getElementById('es-note').value.trim(),
+    remark: document.getElementById('es-remark').value.trim(),
+  };
+  document.getElementById('shuwu-modal').classList.remove('open');
+  renderShuWu();
+  persistData();
+  toast('已儲存 ✓');
+}
+function deleteShuwuFromModal() {
+  const no = parseInt(document.getElementById('es-no').value);
+  if (!confirm('確定要刪除此庶務申請項目嗎？')) return;
+  shuWu.splice(shuWu.findIndex(x => x.no === no), 1);
+  document.getElementById('shuwu-modal').classList.remove('open');
+  renderShuWu();
+  persistData();
+  toast('已刪除');
+}
+function deleteShuwuFromModal() {
+  const no = parseInt(document.getElementById('es-no').value);
+  if (!confirm('確定要刪除這筆庶務申請項目嗎？')) return;
+  const idx = shuWu.findIndex(x => x.no === no);
+  if (idx !== -1) shuWu.splice(idx, 1);
+  document.getElementById('shuwu-modal').classList.remove('open');
+  renderShuWu();
+  persistData();
+  toast('已刪除');
+}
+
+
+// INIT: triggered by startApp() on login
+</script>
+</body>
+</html>
