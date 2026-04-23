@@ -369,8 +369,8 @@ tbody tr:hover td { background: #fafaf8; }
     <div class="login-sub">請選擇進入方式</div>
     <button class="login-btn-viewer" onclick="enterViewer()">進入系統（觀看版）</button>
     <div class="login-divider"><span>後台登入</span></div>
-    <div class="login-field"><label>帳號</label><input id="login-user" type="text" placeholder="請輸入帳號" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"></div>
-    <div class="login-field"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-field"><label>帳號</label><input id="login-user" type="text" placeholder="請輸入帳號（半形英數）" autocomplete="username" inputmode="text" oninput="this.value=toHalf(this.value)" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"></div>
+    <div class="login-field"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼（半形英數）" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="login-error" id="login-error"></div>
     <button class="login-btn-admin" onclick="doLogin()">登入系統</button>
   </div>
@@ -881,9 +881,14 @@ let currentUser=null, appMode=null;
 function getUsers(){try{return JSON.parse(localStorage.getItem('handover_users')||'[]')}catch(e){return[]}}
 function saveUsers(a){localStorage.setItem('handover_users',JSON.stringify(a))}
 
+function toHalf(str) {
+  // 全形英數 → 半形
+  return str.replace(/[\uff01-\uff5e]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+            .replace(/\u3000/g, ' ').trim();
+}
 function doLogin(){
-  const id=document.getElementById('login-user').value.trim();
-  const pw=document.getElementById('login-pass').value.trim();
+  const id = toHalf(document.getElementById('login-user').value);
+  const pw = toHalf(document.getElementById('login-pass').value);
   const err=document.getElementById('login-error');
   err.textContent='';
   if(id===SUPER_USER.id&&pw===SUPER_USER.pw){currentUser=SUPER_USER;appMode='admin';startApp();return}
@@ -944,6 +949,33 @@ function applyViewerRestrictions(){
   document.body.style.webkitUserSelect='none';
 }
 
+// ── 未儲存變更追蹤 ──────────────────────────────────────────────
+let isDirty = false;
+
+function markDirty() {
+  if (appMode !== 'admin') return;
+  isDirty = true;
+  // 在 sync 按鈕旁顯示提示
+  const status = document.getElementById('sync-status');
+  if (status && !status.textContent.includes('●')) {
+    status.textContent = '● 有未同步的修改';
+    status.style.color = '#ef9f27';
+  }
+}
+
+function clearDirty() {
+  isDirty = false;
+}
+
+// 關閉瀏覽器/重新整理前警告
+window.addEventListener('beforeunload', e => {
+  if (isDirty && appMode === 'admin') {
+    e.preventDefault();
+    e.returnValue = '您有尚未同步至 Sheets 的修改，確定要離開嗎？';
+    return e.returnValue;
+  }
+});
+
 function syncToSheets(){
   if(!APPS_SCRIPT_URL){toast('請先填入 Apps Script 網址');return}
   const nav=document.getElementById('nav-sync');
@@ -952,7 +984,7 @@ function syncToSheets(){
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'save',data:{items,projects,shuWu,nextId,nextPid}})})
   .then(r=>r.json()).then(d=>{
     nav.style.opacity='';nav.style.pointerEvents='';
-    if(d.ok){const ts=new Date().toLocaleString('zh-TW',{hour:'2-digit',minute:'2-digit'});document.getElementById('sync-status').textContent='☁ 已同步 '+ts;document.getElementById('sync-status').style.color='#7ab8d6';toast('已同步至 Google Sheets ✓')}
+    if(d.ok){const ts=new Date().toLocaleString('zh-TW',{hour:'2-digit',minute:'2-digit'});document.getElementById('sync-status').textContent='☁ 已同步 '+ts;document.getElementById('sync-status').style.color='#7ab8d6';clearDirty();toast('已同步至 Google Sheets ✓')}
     else{document.getElementById('sync-status').textContent='同步失敗';toast('同步失敗')}
   }).catch(()=>{nav.style.opacity='';nav.style.pointerEvents='';toast('網路錯誤')})
 }
@@ -1247,6 +1279,11 @@ function updateTimestamp() {
 
 // ── NAVIGATION ────────────────────────────────────────────────
 function showPage(pid, target) {
+  // 若有未同步的變更，切換分頁前用瀏覽器原生對話框確認
+  if (isDirty && appMode === 'admin') {
+    const ok = window.confirm('您有尚未同步至 Sheets 的修改，確定要離開嗎？');
+    if (!ok) return;
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(pid).classList.add('active');
@@ -1850,17 +1887,17 @@ function restoreData() {
 
 // Wrap all data-mutating actions to auto-persist
 const _addItem = addItem;
-function addItem() { _addItem(); persistData(); }
+function addItem() { _addItem(); persistData(); markDirty(); }
 const _saveItem = saveItem;
-function saveItem() { _saveItem(); persistData(); }
+function saveItem() { _saveItem(); persistData(); markDirty(); }
 const _deleteItemFromModal = deleteItemFromModal;
-function deleteItemFromModal() { _deleteItemFromModal(); persistData(); }
+function deleteItemFromModal() { _deleteItemFromModal(); persistData(); markDirty(); }
 const _addProject = addProject;
-function addProject() { _addProject(); persistData(); }
+function addProject() { _addProject(); persistData(); markDirty(); }
 const _deleteProject = deleteProject;
-function deleteProject(id) { _deleteProject(id); persistData(); }
+function deleteProject(id) { _deleteProject(id); persistData(); markDirty(); }
 const _updatePct = updatePct;
-function updatePct(id, val) { _updatePct(id, val); persistData(); }
+function updatePct(id, val) { _updatePct(id, val); persistData(); markDirty(); }
 
 // ── 庶務申請資料 ──────────────────────────────────────────────
 let shuWu = [
@@ -1966,6 +2003,7 @@ function saveProject() {
   renderProjects();
   updateTimestamp();
   persistData();
+  markDirty();
   toast('已儲存 ✓');
 }
 function deleteProjFromModal() {
@@ -1976,6 +2014,7 @@ function deleteProjFromModal() {
   renderProjects();
   updateTimestamp();
   persistData();
+  markDirty();
   toast('已刪除');
 }
 
@@ -2015,28 +2054,20 @@ function saveShuwu() {
   document.getElementById('shuwu-modal').classList.remove('open');
   renderShuWu();
   persistData();
+  markDirty();
   toast('已儲存 ✓');
 }
 function deleteShuwuFromModal() {
   const no = parseInt(document.getElementById('es-no').value);
   if (!confirm('確定要刪除此庶務申請項目嗎？')) return;
-  shuWu.splice(shuWu.findIndex(x => x.no === no), 1);
-  document.getElementById('shuwu-modal').classList.remove('open');
-  renderShuWu();
-  persistData();
-  toast('已刪除');
-}
-function deleteShuwuFromModal() {
-  const no = parseInt(document.getElementById('es-no').value);
-  if (!confirm('確定要刪除這筆庶務申請項目嗎？')) return;
   const idx = shuWu.findIndex(x => x.no === no);
   if (idx !== -1) shuWu.splice(idx, 1);
   document.getElementById('shuwu-modal').classList.remove('open');
   renderShuWu();
   persistData();
+  markDirty();
   toast('已刪除');
 }
-
 
 // INIT: triggered by startApp() on login
 </script>
