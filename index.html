@@ -906,7 +906,7 @@ tbody tr:hover td { background: #fafaf8; }
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAOpTEyQWjPIt3k5TEtXuDTlonvu9eTE8mWXPcV9S-3my7yZRXMYX1DBcHbiUk2K9VEg/exec';
 // 層級 S 帳號（可透過修改密碼功能更新，存於 Sheets users 分頁）
-let SUPER_USER = {id:'110219', pw:'110219', name:'\u6797\u7dad\u8fb0', level:'S'};
+let SUPER_USER = {id:'110219', pw:'SNadmin2025', name:'\u6797\u7dad\u8fb0', level:'S'};
 
 function clearChangePwForm() {
   ['cpw-old','cpw-new','cpw-confirm'].forEach(id => document.getElementById(id).value = '');
@@ -1101,6 +1101,16 @@ function loadFromSheets(){
   }).catch(err=>{toast('載入失敗：'+err.message)})
 }
 
+function formatCreated(val) {
+  if (!val) return '系統預設';
+  // Try to parse as date - handles ISO string, full date string, local date string
+  const d = new Date(val);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('zh-TW', {year:'numeric', month:'2-digit', day:'2-digit'});
+  }
+  return val;
+}
+
 function renderUsers(){
   const tbody=document.getElementById('user-tbody');
   if(!tbody) return;
@@ -1111,10 +1121,12 @@ function renderUsers(){
     <td style="font-family:var(--mono);font-size:12px">${u.id}</td>
     <td>${u.name}</td>
     <td><span class="badge ${u.level==='S'?'badge-s':'badge-blue'}">${u.level}</span></td>
-    <td style="font-size:12px;color:var(--text3)">${u.created ? (u.created.includes('T') ? new Date(u.created).toLocaleDateString('zh-TW') : u.created) : '系統預設'}</td>
-    <td style="white-space:nowrap">${u.level!=='S' && isS
-      ? `<button class="btn btn-sm" onclick="openEditUser('${u.id}')" style="color:var(--accent);border-color:#c5daea;margin-right:4px">編輯</button>
-         <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`
+    <td style="font-size:12px;color:var(--text3)">${formatCreated(u.created)}</td>
+    <td style="white-space:nowrap">${isS
+      ? (u.level === 'S'
+        ? `<button class="btn btn-sm" onclick="openEditSuperUser()" style="color:var(--accent);border-color:#c5daea">編輯密碼</button>`
+        : `<button class="btn btn-sm" onclick="openEditUser('${u.id}')" style="color:var(--accent);border-color:#c5daea;margin-right:4px">編輯</button>
+           <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`)
       : '—'}
     </td>
   </tr>`).join('');
@@ -1146,6 +1158,19 @@ function deleteUser(id){
   if(!confirm('確定要刪除帳號「'+id+'」嗎？'))return;
   saveUsers(getUsers().filter(u=>String(u.id)!==String(id)));renderUsers();toast('帳號已刪除');
 }
+function openEditSuperUser() {
+  // 直接捲動到修改密碼區塊並聚焦
+  const sec = document.getElementById('changepw-section');
+  if (sec) {
+    sec.style.display = '';
+    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => {
+      const inp = document.getElementById('cpw-old');
+      if (inp) inp.focus();
+    }, 400);
+  }
+}
+
 function openEditUser(id){
   if(!currentUser || currentUser.level !== 'S') { toast('權限不足'); return; }
   const u = getUsers().find(x => String(x.id) === String(id));
