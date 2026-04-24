@@ -1670,11 +1670,24 @@ function renderDetail() {
   const sel = document.getElementById('fc2');
   const prev = sel.value;
   sel.innerHTML = '<option value="">全部分類</option>' + cats.map(c => `<option${c === prev ? ' selected' : ''}>${c}</option>`).join('');
-  const list = items.filter(i => {
+  let list = items.filter(i => {
     if (fc && i.cat !== fc) return false;
     if (q && !(i.cat + i.item + i.note + i.dept).toLowerCase().includes(q)) return false;
     return true;
   });
+
+  // 同業務總表三層排序：業務分類 → 週期 → 新增順序
+  const catOrder = ['採購及預算','財產及物品管理','公告標誌管理','公文表單歸檔管理','車站違規業務','遺失物中心介面','週轉金管理','查核、檢點作業','上級交辦事項'];
+  const freqOrder2 = {'每日':0,'每週':1,'每月':2,'每季':3,'每年':4,'不定期':5};
+  list = [...list].sort((a, b) => {
+    const ca = catOrder.indexOf(a.cat); const cb = catOrder.indexOf(b.cat);
+    const ia = ca === -1 ? 99 : ca;    const ib = cb === -1 ? 99 : cb;
+    if (ia !== ib) return ia - ib;
+    const fa = freqOrder2[a.cycle] ?? 9; const fb = freqOrder2[b.cycle] ?? 9;
+    if (fa !== fb) return fa - fb;
+    return a.id - b.id;
+  });
+
   const el = document.getElementById('detail-list');
   if (!list.length) {
     el.innerHTML = `<div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合的業務項目</div></div>`;
@@ -1711,6 +1724,9 @@ function renderDetail() {
       <div class="detail-note">
         <div class="detail-note-lbl">注意事項 / 說明</div>
         ${formatNote(i.note)}
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="btn viewer-back" onclick="showPage('p1')" style="font-size:12px;padding:5px 14px">← 返回總表</button>
       </div>
     </div>
   `).join('');
