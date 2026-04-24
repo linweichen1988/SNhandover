@@ -377,8 +377,8 @@ tbody tr:hover td { background: #fafaf8; }
     <div class="login-sub">請選擇進入方式</div>
     <button class="login-btn-viewer" onclick="enterViewer()">進入系統（觀看版）</button>
     <div class="login-divider"><span>後台登入</span></div>
-    <div class="login-field"><label>帳號</label><input id="login-user" type="text" placeholder="請輸入帳號（半形英數）" autocomplete="username" inputmode="text" oninput="this.value=toHalf(this.value)" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"></div>
-    <div class="login-field"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼（半形英數）" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-field"><label>帳號</label><input id="login-user" type="text" placeholder="請輸入帳號（半形英數）" autocomplete="off" inputmode="text" oninput="this.value=toHalf(this.value)" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"></div>
+    <div class="login-field"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼（半形英數）" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="login-error" id="login-error"></div>
     <button class="login-btn-admin" onclick="doLogin()">登入系統</button>
   </div>
@@ -906,7 +906,7 @@ tbody tr:hover td { background: #fafaf8; }
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAOpTEyQWjPIt3k5TEtXuDTlonvu9eTE8mWXPcV9S-3my7yZRXMYX1DBcHbiUk2K9VEg/exec';
 // 層級 S 帳號（可透過修改密碼功能更新，存於 Sheets users 分頁）
-let SUPER_USER = {id:'110219', pw:'SNadmin2025', name:'\u6797\u7dad\u8fb0', level:'S'};
+let SUPER_USER = {id:'110219', pw:'SN@North#2025', name:'\u6797\u7dad\u8fb0', level:'S'};
 
 function clearChangePwForm() {
   ['cpw-old','cpw-new','cpw-confirm'].forEach(id => document.getElementById(id).value = '');
@@ -1114,6 +1114,7 @@ function formatCreated(val) {
 function renderUsers(){
   const tbody=document.getElementById('user-tbody');
   if(!tbody) return;
+  if (!currentUser) return;  // 尚未登入，不渲染
   const isS = currentUser && currentUser.level === 'S';
   const aUsers = getUsers();
   const all = [SUPER_USER, ...aUsers];
@@ -1124,7 +1125,7 @@ function renderUsers(){
     <td style="font-size:12px;color:var(--text3)">${formatCreated(u.created)}</td>
     <td style="white-space:nowrap">${isS
       ? (u.level === 'S'
-        ? `<button class="btn btn-sm" onclick="openEditSuperUser()" style="color:var(--accent);border-color:#c5daea">編輯密碼</button>`
+        ? `<button class="btn btn-sm" onclick="openEditSuperUser()" style="color:var(--accent);border-color:#c5daea">修改密碼</button>`
         : `<button class="btn btn-sm" onclick="openEditUser('${u.id}')" style="color:var(--accent);border-color:#c5daea;margin-right:4px">編輯</button>
            <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`)
       : '—'}
@@ -2244,10 +2245,53 @@ function restoreSession() {
   } catch(e) { return false; }
 }
 
-// ── INIT: 頁面載入時嘗試還原 session ──────────────────────────
+// ── INIT: 頁面載入時先從 Sheets 載入最新密碼，再還原 session ──
 (function() {
-  if (restoreSession()) {
-    startApp();
+  // 先嘗試從 Sheets 取得最新的 SUPER_USER 密碼
+  if (APPS_SCRIPT_URL) {
+    // 使用 JSONP 確保 file:// 和 https:// 都能運作
+    const cbName = '__initLoad__';
+    const timer = setTimeout(() => {
+      // 超時就直接用寫死的密碼繼續
+      const s = document.getElementById('jsonp-init');
+      if (s) s.remove();
+      delete window[cbName];
+      initAfterLoad();
+    }, 5000);
+
+    window[cbName] = function(d) {
+      clearTimeout(timer);
+      const s = document.getElementById('jsonp-init');
+      if (s) s.remove();
+      delete window[cbName];
+      if (d && d.ok && Array.isArray(d.users)) {
+        sheetsUsers = d.users.filter(u => u.level !== 'S');
+        const savedS = d.users.find(u => u.level === 'S' && String(u.id) === String(SUPER_USER.id));
+        if (savedS && savedS.pw) {
+          SUPER_USER = { ...SUPER_USER, pw: savedS.pw };
+        }
+      }
+      initAfterLoad();
+    };
+
+    const script = document.createElement('script');
+    script.id = 'jsonp-init';
+    script.src = APPS_SCRIPT_URL + '?action=load&callback=' + cbName + '&t=' + Date.now();
+    script.onerror = () => {
+      clearTimeout(timer);
+      delete window[cbName];
+      initAfterLoad();
+    };
+    document.head.appendChild(script);
+  } else {
+    initAfterLoad();
+  }
+
+  function initAfterLoad() {
+    if (restoreSession()) {
+      startApp();
+    }
+    // 登入頁已預設顯示，不需要額外操作
   }
 })();
 
