@@ -378,7 +378,9 @@ tbody tr:hover td { background: #fafaf8; }
     <button class="login-btn-viewer" onclick="enterViewer()">進入系統（觀看版）</button>
     <div class="login-divider"><span>後台登入</span></div>
     <div class="login-field"><label>帳號</label><input id="login-user" type="text" placeholder="請輸入帳號（半形英數）" autocomplete="off" inputmode="text" oninput="this.value=toHalf(this.value)" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"></div>
-    <div class="login-field"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼（半形英數）" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <input type="text" style="display:none" aria-hidden="true">
+    <input type="password" style="display:none" aria-hidden="true" autocomplete="new-password">
+    <div class="login-field"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼（半形英數）" autocomplete="new-password" name="login-credential" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="login-error" id="login-error"></div>
     <button class="login-btn-admin" onclick="doLogin()">登入系統</button>
   </div>
@@ -714,23 +716,10 @@ tbody tr:hover td { background: #fafaf8; }
       </div>
     </div>
 
-    <!-- 層級 S 修改密碼區塊 -->
-    <div id="changepw-section" style="display:none;margin-top:28px">
-      <div class="add-form" style="max-width:480px">
-        <div class="form-title">修改層級 S 登入密碼</div>
-        <div class="form-grid form-grid-2" style="margin-bottom:12px">
-          <div class="field"><label>目前密碼</label><input id="cpw-old" type="password" placeholder="請輸入目前密碼"></div>
-          <div class="field"><label>新密碼（至少4碼）</label><input id="cpw-new" type="password" placeholder="請輸入新密碼"></div>
-        </div>
-        <div class="field" style="margin-bottom:12px">
-          <label>確認新密碼</label>
-          <input id="cpw-confirm" type="password" placeholder="再輸入一次新密碼">
-        </div>
-        <div style="font-size:12px;color:var(--red);min-height:18px;margin-bottom:10px" id="cpw-error"></div>
-        <div class="form-actions">
-          <button class="btn btn-primary" onclick="doChangePw()">確認修改</button>
-          <button class="btn" onclick="clearChangePwForm()">清除</button>
-        </div>
+    <!-- 層級 S 修改密碼（點擊帳號列表的修改密碼按鈕觸發 modal） -->
+    <div id="changepw-section" style="display:none;margin-top:20px">
+      <div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:var(--radius);padding:12px 16px;border:1px solid var(--border)">
+        💡 點擊上方帳號列表中層級 S 那列的「修改密碼」按鈕，即可修改登入密碼。
       </div>
     </div>
   </div>
@@ -900,6 +889,30 @@ tbody tr:hover td { background: #fafaf8; }
 </div>
 
 
+<!-- CHANGE PASSWORD MODAL -->
+<div id="changepw-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this){this.style.display='none';this.classList.remove('open')}">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:420px">
+    <div class="modal-title" style="margin-bottom:16px">修改層級 S 登入密碼</div>
+    <div class="field" style="margin-bottom:14px">
+      <label>目前密碼</label>
+      <input id="cpw-old" type="password" placeholder="請輸入目前密碼" autocomplete="new-password">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>新密碼（至少 4 碼）</label>
+      <input id="cpw-new" type="password" placeholder="請輸入新密碼" autocomplete="new-password">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>確認新密碼</label>
+      <input id="cpw-confirm" type="password" placeholder="再輸入一次新密碼" autocomplete="new-password">
+    </div>
+    <div id="cpw-error" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('changepw-modal').style.display='none';document.getElementById('changepw-modal').classList.remove('open')">取消</button>
+      <button class="btn btn-primary" onclick="doChangePw()">確認修改</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -939,6 +952,9 @@ function doChangePw() {
   } else {
     toast('密碼已修改 ✓');
   }
+  // 關閉 modal
+  var modal = document.getElementById('changepw-modal');
+  if(modal){ modal.style.display='none'; modal.classList.remove('open'); }
   clearChangePwForm();
 }
 let currentUser=null, appMode=null;
@@ -1160,15 +1176,32 @@ function deleteUser(id){
   saveUsers(getUsers().filter(u=>String(u.id)!==String(id)));renderUsers();toast('帳號已刪除');
 }
 function openEditSuperUser() {
-  // 直接捲動到修改密碼區塊並聚焦
-  const sec = document.getElementById('changepw-section');
-  if (sec) {
-    sec.style.display = '';
-    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => {
-      const inp = document.getElementById('cpw-old');
-      if (inp) inp.focus();
-    }, 400);
+  // 清空欄位、顯示 modal
+  ['cpw-old','cpw-new','cpw-confirm'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  var errEl = document.getElementById('cpw-error');
+  if(errEl) errEl.textContent = '';
+  var modal = document.getElementById('changepw-modal');
+  if(modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('open');
+    setTimeout(function(){
+      var inp = document.getElementById('cpw-old');
+      if(inp) inp.focus();
+    }, 100);
+  } else {
+    // fallback: 捲動到 section
+    var sec = document.getElementById('changepw-section');
+    if(sec) {
+      sec.style.display = '';
+      sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(function(){
+        var inp = document.getElementById('cpw-old');
+        if(inp) inp.focus();
+      }, 400);
+    }
   }
 }
 
