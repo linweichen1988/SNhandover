@@ -1576,17 +1576,24 @@ function renderMain() {
     return true;
   });
 
-  // Apply sort: if user picked a column, use it; else default = fixed category order
+  // Apply sort: if user picked a column, use it; else default = category → cycle → id
+  const freqOrder = {'每日':0,'每週':1,'每月':2,'每季':3,'每年':4,'不定期':5};
   if (sort1.col && sort1.dir) {
     list = applySort(list, sort1.col, sort1.dir);
   } else {
     const catOrder = ['採購及預算','財產及物品管理','公告標誌管理','公文表單歸檔管理','車站違規業務','遺失物中心介面','週轉金管理','查核、檢點作業','上級交辦事項'];
     list = [...list].sort((a, b) => {
+      // 第一層：業務分類
       const ia = catOrder.indexOf(a.cat);
       const ib = catOrder.indexOf(b.cat);
       const ca = ia === -1 ? 99 : ia;
       const cb = ib === -1 ? 99 : ib;
       if (ca !== cb) return ca - cb;
+      // 第二層：週期（頻率高 → 低）
+      const fa = freqOrder[a.cycle] ?? 9;
+      const fb = freqOrder[b.cycle] ?? 9;
+      if (fa !== fb) return fa - fb;
+      // 第三層：id（新增順序）
       return a.id - b.id;
     });
   }
