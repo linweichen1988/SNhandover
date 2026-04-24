@@ -972,7 +972,7 @@ function doLogin(){
   const err=document.getElementById('login-error');
   err.textContent='';
   if(id===SUPER_USER.id&&pw===SUPER_USER.pw){currentUser=SUPER_USER;appMode='admin';startApp();saveSession();return}
-  const found=getUsers().find(u=>u.id===id&&u.pw===pw);
+  const found=getUsers().find(u=>String(u.id)===String(id)&&String(u.pw)===String(pw));
   if(found){currentUser=found;appMode='admin';startApp();saveSession();return}
   err.textContent='\u5e33\u865f\u6216\u5bc6\u78bc\u932f\u8aa4\uff0c\u8acb\u91cd\u65b0\u8f38\u5165';
 }
@@ -1025,7 +1025,7 @@ function startApp(){
         if(savedS){ SUPER_USER={...SUPER_USER, pw:savedS.pw}; if(currentUser&&currentUser.level==='S') currentUser={...currentUser,pw:savedS.pw}; }
         // Level A: 還原 session 後用 Sheets 確認帳號有效
         if(appMode==='admin'&&currentUser&&currentUser.level==='A'){
-          const validA=sheetsUsers.find(u=>u.id===currentUser.id);
+          const validA=sheetsUsers.find(u=>String(u.id)===String(currentUser.id));
           if(!validA){ doLogout(); toast('帳號已失效，請重新登入'); return; }
           currentUser={...validA};
         }
@@ -1111,7 +1111,7 @@ function renderUsers(){
     <td style="font-family:var(--mono);font-size:12px">${u.id}</td>
     <td>${u.name}</td>
     <td><span class="badge ${u.level==='S'?'badge-s':'badge-blue'}">${u.level}</span></td>
-    <td style="font-size:12px;color:var(--text3)">${u.created||'系統預設'}</td>
+    <td style="font-size:12px;color:var(--text3)">${u.created ? (u.created.includes('T') ? new Date(u.created).toLocaleDateString('zh-TW') : u.created) : '系統預設'}</td>
     <td style="white-space:nowrap">${u.level!=='S' && isS
       ? `<button class="btn btn-sm" onclick="openEditUser('${u.id}')" style="color:var(--accent);border-color:#c5daea;margin-right:4px">編輯</button>
          <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">刪除</button>`
@@ -1135,7 +1135,7 @@ function addUser(){
   if(!id||!pw||!name){toast('請填寫所有欄位');return}
   if(id===SUPER_USER.id){toast('此帳號 ID 已被使用');return}
   const users=getUsers();
-  if(users.find(u=>u.id===id)){toast('此帳號 ID 已存在');return}
+  if(users.find(u=>String(u.id)===String(id))){toast('此帳號 ID 已存在');return}
   users.push({id,pw,name,level:'A',created:new Date().toLocaleDateString('zh-TW')});
   saveUsers(users);
   ['nu-id','nu-pw','nu-name'].forEach(i=>document.getElementById(i).value='');
@@ -1144,11 +1144,11 @@ function addUser(){
 }
 function deleteUser(id){
   if(!confirm('確定要刪除帳號「'+id+'」嗎？'))return;
-  saveUsers(getUsers().filter(u=>u.id!==id));renderUsers();toast('帳號已刪除');
+  saveUsers(getUsers().filter(u=>String(u.id)!==String(id)));renderUsers();toast('帳號已刪除');
 }
 function openEditUser(id){
   if(!currentUser || currentUser.level !== 'S') { toast('權限不足'); return; }
-  const u = getUsers().find(x => x.id === id);
+  const u = getUsers().find(x => String(x.id) === String(id));
   if(!u){ toast('找不到此帳號'); return; }
   document.getElementById('eu-id').value = id;
   document.getElementById('eu-id-display').value = id;
@@ -1166,7 +1166,7 @@ function saveEditUser(){
   const pw=document.getElementById('eu-pw').value.trim();
   if(!name){toast('姓名不可空白');return}
   const users=getUsers();
-  const idx=users.findIndex(u=>u.id===id);
+  const idx=users.findIndex(u=>String(u.id)===String(id));
   if(idx===-1)return;
   users[idx].name=name;
   if(pw) users[idx].pw=pw;
