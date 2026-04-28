@@ -526,7 +526,6 @@ tbody tr:hover td { background: #fafaf8; }
             <option>運務處本部</option><option>票務中心本部</option><option>行控中心本部</option>
             <option>站務中心本部</option><option>南段辦</option><option>遺失物中心</option>
             <option>維修處</option><option>工會/職福會</option><option>無</option>
-            <option>工會/職福會</option>
           </select>
         </div>
       </div>
@@ -772,7 +771,6 @@ tbody tr:hover td { background: #fafaf8; }
           <option>運務處本部</option><option>票務中心本部</option><option>行控中心本部</option>
           <option>站務中心本部</option><option>南段辦</option><option>遺失物中心</option>
           <option>維修處</option><option>工會/職福會</option><option>無</option>
-          <option>工會/職福會</option>
         </select>
       </div>
     </div>
@@ -1843,7 +1841,8 @@ function addItem() {
 }
 
 function openEditModal(id) {
-  const i = items.find(x => x.id === id);
+  id = parseInt(id) || id;  // 統一型別
+  const i = items.find(x => parseInt(x.id) === parseInt(id));
   if (!i) return;
   document.getElementById('e-id').value = id;
   document.getElementById('e-cat').value = i.cat || '';
@@ -1872,7 +1871,7 @@ function saveItem() {
   const cat = document.getElementById('e-cat').value;
   const item = document.getElementById('e-item').value.trim();
   if (!cat || !item) { toast('請選擇業務分類並填寫細項'); return; }
-  const idx = items.findIndex(x => x.id === id);
+  const idx = items.findIndex(x => parseInt(x.id) === parseInt(id));
   if (idx === -1) return;
   items[idx] = { ...items[idx], cat, item,
     cycle: document.getElementById('e-cycle').value,
@@ -1898,7 +1897,7 @@ function saveItem() {
 function deleteItemFromModal() {
   const id = parseInt(document.getElementById('e-id').value);
   if (!confirm('確定要刪除這筆業務嗎？')) return;
-  items = items.filter(i => i.id !== id);
+  items = items.filter(i => parseInt(i.id) !== parseInt(id));
   document.getElementById('edit-modal').classList.remove('open');
   renderMain();
   updateTimestamp();
@@ -1933,7 +1932,7 @@ function addProject() {
 
 function deleteProject(id) {
   if (!confirm('確定要刪除這筆專案嗎？')) return;
-  projects = projects.filter(p => p.id !== id);
+  projects = projects.filter(p => parseInt(p.id) !== parseInt(id));
   renderProjects();
   updateTimestamp();
   persistData();
@@ -2166,7 +2165,8 @@ function renderShuWu() {
 
 // ── PROJECT MODAL ─────────────────────────────────────────────
 function openProjModal(id) {
-  const p = projects.find(x => x.id === id);
+  id = parseInt(id) || id;
+  const p = projects.find(x => parseInt(x.id) === parseInt(id));
   if (!p) return;
   document.getElementById('ep-id').value = id;
   document.getElementById('ep-cat').value = p.cat || '';
@@ -2187,7 +2187,7 @@ function saveProject() {
   const cat = document.getElementById('ep-cat').value;
   const item = document.getElementById('ep-item').value.trim();
   if (!cat || !item) { toast('請選擇業務分類並填寫細項說明'); return; }
-  const idx = projects.findIndex(x => x.id === id);
+  const idx = projects.findIndex(x => parseInt(x.id) === parseInt(id));
   if (idx === -1) return;
   projects[idx] = { ...projects[idx], cat, item,
     risk: document.getElementById('ep-risk').value,
@@ -2206,7 +2206,7 @@ function saveProject() {
 function deleteProjFromModal() {
   const id = parseInt(document.getElementById('ep-id').value);
   if (!confirm('確定要刪除這筆專案嗎？')) return;
-  projects = projects.filter(p => p.id !== id);
+  projects = projects.filter(p => parseInt(p.id) !== parseInt(id));
   document.getElementById('proj-modal').classList.remove('open');
   renderProjects();
   updateTimestamp();
