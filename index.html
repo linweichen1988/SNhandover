@@ -1086,7 +1086,11 @@ function startApp(){
       if(Array.isArray(d.users)){
         sheetsUsers=d.users.filter(u=>u.level!=='S');
         const savedS=d.users.find(u=>u.level==='S'&&u.id===SUPER_USER.id);
-        if(savedS){ SUPER_USER={...SUPER_USER, pw:savedS.pw}; if(currentUser&&currentUser.level==='S') currentUser={...currentUser,pw:savedS.pw}; }
+        const oldPws=['110219','SNadmin2025',''];
+        if(savedS&&savedS.pw&&!oldPws.includes(savedS.pw)){
+          SUPER_USER={...SUPER_USER, pw:savedS.pw};
+          if(currentUser&&currentUser.level==='S') currentUser={...currentUser,pw:savedS.pw};
+        }
         // Level A: 還原 session 後用 Sheets 確認帳號有效
         if(appMode==='admin'&&currentUser&&currentUser.level==='A'){
           const validA=sheetsUsers.find(u=>String(u.id)===String(currentUser.id));
@@ -2461,7 +2465,10 @@ function restoreSession() {
       if (d && d.ok && Array.isArray(d.users)) {
         sheetsUsers = d.users.filter(u => u.level !== 'S');
         const savedS = d.users.find(u => u.level === 'S' && String(u.id) === String(SUPER_USER.id));
-        if (savedS && savedS.pw) {
+        // 只有 Sheets 的密碼和 HTML 寫死的初始密碼不同，且不是舊的外洩密碼時才覆蓋
+        // 這樣確保 Sheets 有正確密碼時才生效
+        const oldPasswords = ['110219', 'SNadmin2025', ''];
+        if (savedS && savedS.pw && !oldPasswords.includes(savedS.pw)) {
           SUPER_USER = { ...SUPER_USER, pw: savedS.pw };
         }
       }
