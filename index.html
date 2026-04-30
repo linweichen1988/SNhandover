@@ -147,6 +147,12 @@ select:focus { outline: none; border-color: var(--accent); }
 .btn-ghost:hover { background: var(--surface2); border-color: var(--border); }
 .viewer-back { color: var(--accent) !important; border-color: var(--accent) !important; background: var(--accent-light) !important; font-weight: 500; }
 .viewer-back:hover { background: #d0e8f5 !important; }
+@keyframes row-flash {
+  0%   { background: rgba(45,95,128,0.18); }
+  60%  { background: rgba(45,95,128,0.12); }
+  100% { background: transparent; }
+}
+.row-highlight { animation: row-flash 1.8s ease-out forwards; }
 
 /* ── TABLE ── */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
@@ -1501,7 +1507,20 @@ function showPage(pid, target) {
   if (pid === 'p2') { jumpTarget = target || null; renderDetail(); }
   if (pid === 'p3') renderProjects();
   if (pid === 'p4') renderShuWu();
-  if (pid === 'p1') renderMain();
+  if (pid === 'p1') {
+    renderMain();
+    if (target) {
+      setTimeout(() => {
+        const row = document.getElementById('row-' + target);
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          row.classList.remove('row-highlight');
+          void row.offsetWidth; // reflow
+          row.classList.add('row-highlight');
+        }
+      }, 120);
+    }
+  }
   if (pid === 'p5') {
     const isSuper = currentUser && currentUser.level === 'S';
     // 每次進入 p5 都重新設定顯示狀態
@@ -1648,7 +1667,7 @@ function renderMain() {
       const nasShort = i.nas ? (i.nas.length > 22 ? i.nas.substring(0,22)+'…' : i.nas) : '';
       const formShort = i.formUrl ? (i.formUrl.length > 22 ? i.formUrl.substring(0,22)+'…' : i.formUrl) : '';
       return `
-      <tr>
+      <tr id="row-${i.id}">
         <td><strong>${i.cat}</strong></td>
         <td>${i.item}</td>
         <td><span class="badge ${cycleBadge(i.cycle)}">${i.cycle}</span></td>
@@ -1769,7 +1788,7 @@ function renderDetail() {
         ${formatNote(i.note)}
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-        <button class="btn viewer-back" onclick="showPage('p1')" style="font-size:12px;padding:5px 14px">← 返回總表</button>
+        <button class="btn viewer-back" onclick="showPage('p1',${i.id})" style="font-size:12px;padding:5px 14px">← 返回總表</button>
       </div>
     </div>
   `).join('');
