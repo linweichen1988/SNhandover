@@ -1702,9 +1702,8 @@ function renderMain() {
 
 // ── FORMAT NOTE ───────────────────────────────────────────────
 function formatNote(note) {
-  if (!note || !note.trim()) return '<span style="color:var(--color-text-tertiary,#9e9c98)">尚無說明</span>';
+  if (!note || !note.trim()) return '<span style="color:var(--text3)">尚無說明</span>';
 
-  // Split on: newlines, or Chinese/numeric list markers like 1. 2. (1) （1） 一、 二、
   const parts = note
     .split(/(?=\n|(?<=[。；])\s*(?=\d+[.、．]|[（(]\d+[)）]|[一二三四五六七八九十]+[、．]))/g)
     .flatMap(p => p.split(/\n/))
@@ -1712,19 +1711,18 @@ function formatNote(note) {
     .filter(p => p.length > 0);
 
   if (parts.length <= 1) {
-    return `<span style="line-height:1.9">${escHtml(note.trim())}</span>`;
+    return `<span style="line-height:1.9;color:var(--text2)">${escHtml(note.trim())}</span>`;
   }
 
   return parts.map(p => {
-    // Check if line starts with a list marker
     const isMarked = /^(\d+[.、．]|[（(]\d+[)）]|[一二三四五六七八九十]+[、．]|\-|•)/.test(p);
     if (isMarked) {
-      return `<div style="display:flex;gap:6px;margin-bottom:4px;line-height:1.75">
-        <span style="flex-shrink:0;color:var(--accent,#2d5f80);font-weight:500;min-width:18px">${escHtml(p.match(/^([^\s　]+)/)[0])}</span>
-        <span>${escHtml(p.replace(/^([^\s　]+[\s　]*)/, ''))}</span>
+      return `<div style="display:flex;gap:6px;margin-bottom:4px;line-height:1.75;color:var(--text2)">
+        <span style="flex-shrink:0;color:var(--text2);font-weight:500;min-width:18px">${escHtml(p.match(/^([^\s　]+)/)[0])}</span>
+        <span style="color:var(--text2)">${escHtml(p.replace(/^([^\s　]+[\s　]*)/, ''))}</span>
       </div>`;
     }
-    return `<div style="margin-bottom:4px;line-height:1.75">${escHtml(p)}</div>`;
+    return `<div style="margin-bottom:4px;line-height:1.75;color:var(--text2)">${escHtml(p)}</div>`;
   }).join('');
 }
 
@@ -1777,20 +1775,20 @@ function renderDetail() {
         </div>
       </div>
       <div class="detail-meta">
-        <div class="detail-meta-item"><div class="lbl">中心承辦人</div>${i.contact}</div>
-        <div class="detail-meta-item"><div class="lbl">外單位承辦人</div>${i.ext || '<span style="color:var(--text3)">—</span>'}</div>
-        <div class="detail-meta-item"><div class="lbl">對應部門</div>${i.dept}</div>
+        <div class="detail-meta-item"><div class="lbl">中心承辦人</div><span style="color:var(--text2)">${i.contact || '—'}</span></div>
+        <div class="detail-meta-item"><div class="lbl">外單位承辦人</div><span style="color:var(--text2)">${i.ext || '<span style="color:var(--text3)">—</span>'}</span></div>
+        <div class="detail-meta-item"><div class="lbl">對應部門</div><span style="color:var(--text2)">${i.dept || '—'}</span></div>
       </div>
       ${(i.nas || i.formUrl || i.mail) ? `
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;font-size:12px">
-        ${i.nas ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NAS 連結</div><span class="nas-link">${i.nas}</span></div>` : '<div></div>'}
-        ${i.formUrl ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">線上表單</div><span class="nas-link">${i.formUrl}</span></div>` : '<div></div>'}
-        ${i.mail ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">公務信件</div><span style="font-size:12px;color:var(--text2)">${i.mail}</span></div>` : '<div></div>'}
+        ${i.nas     ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NAS 連結</div><span style="color:var(--text2)">${i.nas}</span></div>` : '<div></div>'}
+        ${i.formUrl ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">線上表單</div><span style="color:var(--text2)">${i.formUrl}</span></div>` : '<div></div>'}
+        ${i.mail    ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">公務信件</div><span style="color:var(--text2)">${i.mail}</span></div>` : '<div></div>'}
       </div>` : ''}
       ${(i.formNo || i.reg) ? `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:12px">
-        ${i.formNo ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">對應表單編號</div><span style="font-family:var(--mono);font-size:12px;color:var(--accent)">${i.formNo}</span></div>` : '<div></div>'}
-        ${i.reg ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">對應規章</div><span style="font-size:12px;color:var(--text2)">${i.reg}</span></div>` : '<div></div>'}
+        ${i.formNo ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">對應表單編號</div><span style="font-family:var(--mono);font-size:12px;color:var(--text2)">${i.formNo}</span></div>` : '<div></div>'}
+        ${i.reg    ? `<div><div class="lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">對應規章</div><span style="font-size:12px;color:var(--text2)">${i.reg}</span></div>` : '<div></div>'}
       </div>` : ''}
       <div class="detail-note">
         <div class="detail-note-lbl">注意事項 / 說明</div>
