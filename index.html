@@ -1236,7 +1236,7 @@ function startApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='flex';
 
-  const level    = currentUser ? currentUser.level : 'V';
+  const level    = currentUser ? (String(currentUser.level || '').trim()) : 'V';
   const isS      = level === 'S';
   const isA      = level === 'A';
   const isB      = level === 'B';
@@ -2782,8 +2782,8 @@ function restoreSession() {
     } else if (s.userLevel === 'V') {
       currentUser = { id: 'guest', name: '訪客', level: 'V' };
     } else {
-      // Level A: 先用 session 資料暫代，Sheets 載入後再確認
-      currentUser = { id: s.userId, name: s.userName, level: 'A' };
+      // A 或 B 層：用 session 記錄的正確 level 暫代，Sheets 載入後再確認
+      currentUser = { id: s.userId, name: s.userName, level: String(s.userLevel || 'A').trim() };
     }
     return true;
   } catch(e) { return false; }
