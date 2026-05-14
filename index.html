@@ -690,7 +690,7 @@ tbody tr:hover td { background: #fafaf8; }
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-ghost viewer-back" onclick="showPage('p1')">← 返回總表</button>
-      <button class="btn btn-primary" onclick="openAddShuWuModal()">＋ 新增庶務</button>
+      <button class="btn btn-primary" onclick="toggleForm('form4')">＋ 新增庶務</button>
     </div>
   </div>
   <div class="page-body">
@@ -710,17 +710,47 @@ tbody tr:hover td { background: #fafaf8; }
     <table>
       <thead>
         <tr>
-          <th>項次</th><th>類別</th><th>申請物件</th><th>樣態</th>
+          <th>類別</th><th>申請物件</th><th>樣態</th>
           <th>對應單位</th><th>申請樣態/表單編號</th><th>對應規章</th><th>說明</th><th>備註</th><th></th>
         </tr>
       </thead>
       <tbody id="tbody4"></tbody>
     </table>
     </div>
+
+    <div id="form4" class="add-form">
+      <div class="form-title">新增庶務申請項目</div>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>類別 *</label><input id="as-cat" placeholder="例：行政處"></div>
+        <div class="field"><label>申請物件 *</label><input id="as-obj" placeholder="例：制服"></div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>樣態</label><input id="as-state" placeholder="例：到職、調職、復職"></div>
+        <div class="field"><label>對應單位</label><input id="as-unit" placeholder="例：行政處"></div>
+      </div>
+      <div class="field">
+        <label>申請樣態 / 表單編號</label>
+        <input id="as-formNo" placeholder="例：TMRT-ADD-GEN-0-4093 …">
+      </div>
+      <div class="field">
+        <label>對應規章</label>
+        <input id="as-reg" placeholder="例：TMRT-ADD-GEN-0-3008 …（可空白）">
+      </div>
+      <div class="field">
+        <label>說明</label>
+        <textarea id="as-note" rows="2" placeholder="說明流程或注意事項…"></textarea>
+      </div>
+      <div class="field">
+        <label>備註</label>
+        <input id="as-remark" placeholder="附件說明、特殊條件等（可空白）">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addShuWu()">確認新增</button>
+        <button class="btn" onclick="toggleForm('form4')">取消</button>
+      </div>
+    </div>
   </div>
 </div>
-
-<!-- PAGE 5 -->
 <div id="p5" class="page">
   <div class="page-header">
     <div><div class="page-title">權限管理</div><div class="page-sub" id="p5-sub">帳號列表</div></div>
@@ -946,40 +976,6 @@ tbody tr:hover td { background: #fafaf8; }
 
 
 <!-- ADD SHUWU MODAL -->
-<div class="modal-overlay" id="add-shuwu-modal" onclick="if(event.target===this)closeAddShuWuModal()">
-  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:680px">
-    <div class="modal-title">新增庶務申請項目</div>
-    <div class="form-grid form-grid-2" style="margin-bottom:12px">
-      <div class="field"><label>類別 *</label><input id="as-cat" placeholder="例：行政處"></div>
-      <div class="field"><label>申請物件 *</label><input id="as-obj" placeholder="例：制服"></div>
-    </div>
-    <div class="form-grid form-grid-2" style="margin-bottom:12px">
-      <div class="field"><label>樣態</label><input id="as-state" placeholder="例：到職、調職、復職"></div>
-      <div class="field"><label>對應單位</label><input id="as-unit" placeholder="例：行政處"></div>
-    </div>
-    <div class="field" style="margin-bottom:12px">
-      <label>申請樣態 / 表單編號</label>
-      <input id="as-formNo" placeholder="例：TMRT-ADD-GEN-0-4093 …">
-    </div>
-    <div class="field" style="margin-bottom:12px">
-      <label>對應規章</label>
-      <input id="as-reg" placeholder="例：TMRT-ADD-GEN-0-3008 …（可空白）">
-    </div>
-    <div class="field" style="margin-bottom:12px">
-      <label>說明</label>
-      <textarea id="as-note" rows="2" placeholder="說明流程或注意事項…"></textarea>
-    </div>
-    <div class="field" style="margin-bottom:16px">
-      <label>備註</label>
-      <input id="as-remark" placeholder="附件說明、特殊條件等（可空白）">
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeAddShuWuModal()">取消</button>
-      <button class="btn btn-primary" onclick="addShuWu()">確認新增</button>
-    </div>
-  </div>
-</div>
-
 <!-- CHANGE SELF PASSWORD MODAL (層級 A 用) -->
 <div id="change-self-pw-modal" class="modal-overlay" onclick="if(event.target===this)closeChangeSelfPwModal()">
   <div class="modal-box" onclick="event.stopPropagation()" style="max-width:420px">
@@ -2181,30 +2177,36 @@ function renderProjects() {
   }
   const fr = document.getElementById('fr3').value;
   const fd = document.getElementById('fd3').value;
-  let list = projects.filter(p => {
+
+  // 分成未完成 / 已完成兩份
+  let incomplete = projects.filter(p => {
+    if (p.pct >= 100) return false;
     if (fr && p.risk !== fr) return false;
     if (fd === '0' && p.pct !== 0) return false;
     if (fd === '50' && (p.pct === 0 || p.pct === 100)) return false;
-    if (fd === '100' && p.pct !== 100) return false;
+    if (fd === '100') return false; // 已完成在下方
+    return true;
+  });
+  let done = projects.filter(p => {
+    if (p.pct < 100) return false;
+    if (fr && p.risk !== fr) return false;
     return true;
   });
 
   const riskOrder = {特級:0, 緊急:1, 普通:2};
   const riskCmp = (a, b) => (riskOrder[a.risk] ?? 9) - (riskOrder[b.risk] ?? 9);
 
+  // 排序：未完成
   if (sort3.col && sort3.dir) {
     if (sort3.col === 'risk') {
-      // User explicitly sorted by risk: asc = 特級→普通, desc = 普通→特級
-      list = [...list].sort((a, b) => sort3.dir === 'asc' ? riskCmp(a,b) : riskCmp(b,a));
+      incomplete = [...incomplete].sort((a, b) => sort3.dir === 'asc' ? riskCmp(a,b) : riskCmp(b,a));
     } else if (sort3.col === 'pct') {
-      // Numeric sort for progress, with risk as tiebreaker
-      list = [...list].sort((a, b) => {
+      incomplete = [...incomplete].sort((a, b) => {
         const cmp = sort3.dir === 'asc' ? a.pct - b.pct : b.pct - a.pct;
         return cmp !== 0 ? cmp : riskCmp(a, b);
       });
     } else {
-      // Text sort on chosen column, risk as tiebreaker
-      list = [...list].sort((a, b) => {
+      incomplete = [...incomplete].sort((a, b) => {
         const va = (a[sort3.col] || '').toString();
         const vb = (b[sort3.col] || '').toString();
         const cmp = sort3.dir === 'asc' ? va.localeCompare(vb,'zh-TW') : vb.localeCompare(va,'zh-TW');
@@ -2212,38 +2214,75 @@ function renderProjects() {
       });
     }
   } else {
-    // Default: risk severity only
-    list = [...list].sort(riskCmp);
+    incomplete = [...incomplete].sort(riskCmp);
   }
+  // 已完成：固定依完成日（due）倒排，無 due 的排最後
+  done = [...done].sort((a, b) => {
+    const da = a.due || '';
+    const db = b.due || '';
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return db.localeCompare(da);
+  });
 
   const tbody = document.getElementById('tbody3');
-  if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合的專案項目</div></div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = list.map(p => {
+  const editCol = (id) => (appMode==='admin' && currentUser && currentUser.level==='S')
+    ? `<td class="edit-btn-col"><button class="btn btn-sm" onclick="openProjModal(${id})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>`
+    : '<td class="edit-btn-col"></td>';
+
+  const renderRow = (p, isDone) => {
     const rc = riskConfig(p.risk);
+    const rowStyle = isDone ? 'background:var(--surface2);opacity:0.75;' : '';
     return `
-    <tr>
+    <tr style="${rowStyle}">
       <td><strong>${p.cat}</strong></td>
-      <td><span class="risk-dot ${rc.dot}"></span><span class="badge ${rc.badge}">${p.risk}</span></td>
+      <td><span class="risk-dot ${isDone ? '' : rc.dot}"></span><span class="badge ${isDone ? 'badge-gray' : rc.badge}">${p.risk}</span></td>
       <td style="max-width:200px">${p.item}</td>
       <td>
         <div class="progress-wrap">
           <div class="progress-bar">
-            <div class="progress-fill" style="width:${p.pct}%;background:${rc.prog}"></div>
+            <div class="progress-fill" style="width:${p.pct}%;background:${isDone ? '#8ab06b' : rc.prog}"></div>
           </div>
           <input class="progress-input" type="number" min="0" max="100" value="${p.pct}"
-            onchange="updatePct(${p.id},this.value)" title="修改進度">
+            onchange="updatePct(${p.id},this.value)" title="修改進度" ${isDone ? 'readonly style="opacity:0.5"' : ''}>
           <span style="font-size:11px;color:var(--text3)">%</span>
         </div>
       </td>
       <td style="font-size:12px;max-width:200px;line-height:1.5;color:var(--text2)">${p.note}</td>
       <td style="font-size:12px">${p.owner}</td>
       <td style="font-size:12px;font-family:var(--mono);white-space:nowrap">${formatDate(p.due)}</td>
-      ${(appMode==='admin' && currentUser && currentUser.level==='S') ? `<td class="edit-btn-col"><button class="btn btn-sm" onclick="openProjModal(${p.id})" style="color:var(--accent);border-color:#c5daea">編輯</button></td>` : '<td class="edit-btn-col"></td>'}
+      ${editCol(p.id)}
+    </tr>`;
+  };
+
+  let html = '';
+
+  // 未完成區
+  if (incomplete.length === 0 && fd !== '100') {
+    html += `<tr><td colspan="8"><div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合的專案項目</div></div></td></tr>`;
+  } else {
+    html += incomplete.map(p => renderRow(p, false)).join('');
+  }
+
+  // 已完成區（有資料才顯示，且篩選「進行中」時不顯示）
+  if (done.length > 0 && fd !== '50' && fd !== '0') {
+    html += `<tr>
+      <td colspan="8" style="padding:0">
+        <div style="background:var(--border);height:1px;margin:4px 0"></div>
+      </td>
     </tr>
-  `}).join('');
+    <tr>
+      <td colspan="8" style="padding:8px 14px 4px;background:var(--surface2)">
+        <span style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text3);text-transform:uppercase">
+          ✓ 已完成（${done.length} 件）
+        </span>
+      </td>
+    </tr>`;
+    html += done.map(p => renderRow(p, true)).join('');
+  }
+
+  tbody.innerHTML = html;
   updateBadges();
 }
 
@@ -2597,12 +2636,11 @@ function renderShuWu() {
 
   const tbody = document.getElementById('tbody4');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合項目</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">○</div><div class="empty-text">無符合項目</div></div></td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(r => `
     <tr>
-      <td style="font-size:12px;font-family:var(--mono);text-align:center">${r.no}</td>
       <td><span class="badge badge-blue" style="font-size:11px">${r.cat}</span></td>
       <td style="font-weight:500">${r.obj}</td>
       <td style="font-size:12px;color:var(--text2)">${r.state}</td>
@@ -2733,19 +2771,12 @@ function deleteShuwuFromModal() {
 
 // ── 庶務申請 新增 ─────────────────────────────────────────────────
 function openAddShuWuModal() {
-  ['as-cat','as-obj','as-state','as-unit','as-formNo','as-reg','as-note','as-remark']
-    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  const _mo = document.getElementById('add-shuwu-modal');
-  _mo.style.setProperty('display','flex','important');
-  _mo.classList.add('open');
-  setTimeout(() => {
-    const el = document.getElementById('as-cat'); if(el) el.focus();
-  }, 100);
+  // 相容舊呼叫：直接切換行內表單
+  toggleForm('form4');
 }
 function closeAddShuWuModal() {
-  const _mc = document.getElementById('add-shuwu-modal');
-  _mc.classList.remove('open');
-  _mc.style.removeProperty('display');
+  const f = document.getElementById('form4');
+  if (f) f.style.display = 'none';
 }
 function addShuWu() {
   const cat    = document.getElementById('as-cat').value.trim();
@@ -2763,7 +2794,10 @@ function addShuWu() {
     remark: document.getElementById('as-remark').value.trim(),
   };
   shuWu.push(newItem);
-  closeAddShuWuModal();
+  // 清空欄位並收起表單
+  ['as-cat','as-obj','as-state','as-unit','as-formNo','as-reg','as-note','as-remark']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  toggleForm('form4');
   renderShuWu();
   persistData();
   markDirty();
